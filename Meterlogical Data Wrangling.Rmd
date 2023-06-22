@@ -1,0 +1,12 @@
+---
+title: "Meterological Data Wrangling"
+author: "Catherine Cornella"
+date: "2023-06-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Intial File save and Test
