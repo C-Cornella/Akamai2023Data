@@ -1,0 +1,36 @@
+---
+title: "Airflow Data"
+author: "Catherine Cornella"
+date: "2023-06-22"
+output: html_document
+---
+
+## Preliminary "playing" with airflow data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)      #General Data wrangling
+library(readr)      #File reading and writing
+library(knitr)      #Markdown file exporting
+library(lubridate)  #Date-Time Wrangling
+library(FITSio)     #Fits file parsing
+```
+
+## Data Import
+
+```{r}
+
+```
+
+## Data Tidying
+
+```{r}
+
+```
+
+## Data Export
+
+``` {r}
+
+```
