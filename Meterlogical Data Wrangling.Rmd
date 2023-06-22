@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(readr)
 library(knitr)
+library(lubridate)
 ```
 
 ## Data Import
@@ -45,9 +46,18 @@ source2023 = "http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2023.dat"
 ## Data Tidying
 
 ```{r undefinedDataTidying, message=FALSE, warning=FALSE}
-#Turn the days and such into Date-time objects with lubridate
+#Turn the days and such into Date-time objects with lubridate, drop the other columns, keep as a separate dataframe. 
+dataframeDT <- dataframe %>% mutate(dateTimeStr = paste(Year, Month, Day, Hour, Minute)) %>% 
+                            mutate(DateTime = ymd_hm(dateTimeStr, tz="HST")) %>% 
+                            select(DateTime, WindSpd, WindDir, Temp, RHumid, Pressure, NA.)
+dataframeDT
 ```
 
-
-
 ## Data Export
+
+```{r DataExport, message=FALSE, warning=FALSE}
+#Export the DateTime dataframe (dataframeDT) as a .csv
+write.csv(dataframeDT, "MeteorDataDT.csv", row.names=FALSE)
+#Export the unconverted dataframe (dataframe) as a .csv
+write.csv(dataframe, "MeteorData.csv", row.names=FALSE)
+```
