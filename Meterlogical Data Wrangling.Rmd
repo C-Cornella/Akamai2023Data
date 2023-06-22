@@ -7,6 +7,47 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(readr)
+library(knitr)
 ```
 
-Intial File save and Test
+## Data Import
+Data source: 
+Year 2022: http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2022.dat
+Year 2023: http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2023.dat (Last gathered from as of 6/23)
+
+Data Format can be found in the included (Weather Station Data Format.txt) file
+
+```{r DataImportFromWebsite, message=FALSE, warning=FALSE}
+source2022 = "http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2022.dat"
+source2023 = "http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2023.dat"
+
+#It may be possible to create a list of sources, and read all the files into the same dataset from the beginning. At this time I don't think that will improve functionality by a significant enough margin to warrant attempting it. 
+
+#Current approach is read each file into a seperate dataframe and combine later. As the file is read in column names are assigned. 
+(data2022 <- read.delim(source2022, 
+                        sep=" ", 
+                        header = FALSE, 
+                        col.names = c("Year", "Month", "Day", "Hour", "Minute", "WindSpd", "WindDir", "Temp", "RHumid", "Pressure", "NA" )))
+(data2023 <- read.delim(source2023, 
+                        sep=" ", 
+                        header = FALSE, 
+                        col.names = c("Year", "Month", "Day", "Hour", "Minute", "WindSpd", "WindDir", "Temp", "RHumid", "Pressure", "NA" )))
+```
+
+```{r DataFrameCombine, message=FALSE, warning=FALSE}
+#Combine the rows from the datasets into a master dataframe
+(dataframe <- bind_rows(data2022, data2023))
+```
+
+## Data Tidying
+
+```{r undefinedDataTidying, message=FALSE, warning=FALSE}
+#Turn the days and such into Date-time objects with lubridate
+```
+
+
+
+## Data Export

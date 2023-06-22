@@ -1,0 +1,11 @@
+Col 1:  Year eg. 2023
+Col 2:  Month e.g. 06 
+Col 3:  Day of month:  e.g. 20 
+Col 4:  Hour (HST) e.g. 17 
+Col 5:  Minute e.g. 00 
+Col 6:  Wind Speed (knots) e.g. 8 
+Col 7:  Wind Direction (Deg E or N) e.g. 235 
+Col 8:  Temperature (deg C) e.g. 3.72 
+Col 9:  RH (%) e.g. 79 
+Col 10:  Pressure (mbar) e.g. 617.0 
+Col 11:  NA e.g. 0.00
