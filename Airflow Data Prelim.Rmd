@@ -12,16 +12,36 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(dplyr)      #General Data wrangling
 library(readr)      #File reading and writing
+library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
+library(tidyr)      #Data formatting
 library(lubridate)  #Date-Time Wrangling
 library(FITSio)     #Fits file parsing
 ```
 
 ## Data Import
 
-```{r}
+Data Source: included text files
 
+```{r}
+source18 <- "textAF_turbopanda_2022-08-18.txt"
+source19 <- "textAF_turbopanda_2022-08-19.txt"
+
+#Read lines from the file
+dataFrame18 <- read.table(source18)  
+dataFrame19 <- read.table(source19)
+
+#Placeholder col names
+colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+              "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
+              "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
+              "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
+              "npixsat", "offsets(0)", "Offsets(1)", "flagdata")
+
+dataFrame18
 ```
+
+
 
 ## Data Tidying
 
