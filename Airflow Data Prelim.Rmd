@@ -26,6 +26,7 @@ Data Source: included text files
 ```{r}
 source18 <- "textAF_turbopanda_2022-08-18.txt"
 source19 <- "textAF_turbopanda_2022-08-19.txt"
+
 source905 <- "textAF_turbopanda_2022-09-05.txt"
 source906 <- "textAF_turbopanda_2022-09-06.txt"
 
@@ -38,12 +39,19 @@ colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo",
               "npixsat", "offsets(0)", "Offsets(1)", "flagdata")
 
 #Read lines from the file
-dataFrame18 <- read.table(source18)  
-dataFrame19 <- read.table(source19)
+#dataFrame18 <- read.table(source18)  
+#dataFrame19 <- read.table(source19)
 data905 <- read.table(source905)
 data906 <- read.table(source906, col.names = colNames)
 
-data906
+datapic5 <- read.table("textAF_picasso_2022-09-05.txt")
+datapic6 <- read.table("textAF_picasso_2022-09-06.txt")
+datacy5 <- read.table("textAF_cyclone-hx9_2022-09-05.txt")
+datacy6 <- read.table("textAF_cyclone-hx9_2022-09-06.txt")
+dataDT5 <- read.table("textAF_darkthunder_2022-09-05.txt")
+dataDT6 <- read.table("textAF_darkthunder_2022-09-06.txt")
+dataFF5 <- read.table("textAF_freflow_2022-09-05.txt")
+dataFF6 <- read.table("textAF_freflow_2022-09-06.txt")
 ```
 
 
