@@ -16,7 +16,7 @@ library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
 library(tidyr)      #Data formatting
 library(lubridate)  #Date-Time Wrangling
-library(FITSio)     #Fits file parsing
+library(FITSio)     #Fits file parsing -- Probably unecessary, will likely remove later
 ```
 
 ## Data Import
@@ -79,7 +79,28 @@ fileListTurbo <- list.files(path=filePathTurbo,
                             full.names=TRUE, 
                             recursive=TRUE)
 
+#Import data
+# -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
+# -- Function Arguments
+#    lapply: 
+#        fileListExample: List to execute on
+#        function to execute: Read.table
+#             x: element to read
+#             header: Assume no header in the files
+#             col.names: Read in data assigning these names to each column
+dataListCy <- lapply(fileListCy, function(x) read.table(x, header = FALSE, col.names = colNames) )  
+dataListDark <- lapply(fileListDark, function(x) read.table(x, header = FALSE, col.names = colNames) )
+dataListFre <- lapply(fileListFre, function(x) read.table(x, header = FALSE, col.names = colNames) )
+dataListPic <- lapply(fileListPic, function(x) read.table(x, header = FALSE, col.names = colNames) )
+dataListTurbo <- lapply(fileListTurbo, function(x) read.table(x, header = FALSE, col.names = colNames) )
 
+#Join individuals into masterDataframe
+# -- bind_rows takes a list of dataframes and combines them into one, appending rows to the end of the dataFrame. --
+dataFrameCy <- bind_rows(dataListCy) 
+dataFrameDark <- bind_rows(dataListDark) 
+dataFrameFre <- bind_rows(dataListFre) 
+dataFramePic <- bind_rows(dataListPic) 
+dataFrameTurbo <- bind_rows(dataListTurbo) 
 ```
 
 ```{r}
@@ -88,11 +109,15 @@ tempList <- c("turbopandaText/textAF_turbopanda_2022-09-06.txt",
               "turbopandaText/textAF_turbopanda_2022-09-07.txt")
 
 #Reads in each .txt as a dataset in a list. 
-(listOfFiles <- lapply(tempList, function(x) read.table(x, header = FALSE, 
-                                                           col.names = colNames) ) ) 
+listOfFiles <- lapply(tempList, function(x) read.table(x, header = FALSE, 
+                                                           col.names = colNames) )  
 
 #Join the unique dataframes in the list into one table
-(dataframe <- bind_rows(listOfFiles) )
+dataframe <- bind_rows(listOfFiles) 
+
+dataframe
+#Export dataframe as a .csv (just for funsies)
+write.csv(dataframe, "testAirflowData.csv", row.names=FALSE)
 
 ```
 
