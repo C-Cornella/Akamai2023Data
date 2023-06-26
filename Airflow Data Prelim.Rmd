@@ -23,33 +23,76 @@ library(FITSio)     #Fits file parsing
 
 Data Source: included text files
 
-```{r}
-source18 <- "turbopandaText/textAF_turbopanda_2022-08-18.txt"
-source19 <- "turbopandaText/textAF_turbopanda_2022-08-19.txt"
+```{r DataImport: Variables, message=FALSE, warning=FALSE}
 
-source905 <- "turbopandaText/textAF_turbopanda_2022-09-05.txt"
-source906 <- "turbopandaText/textAF_turbopanda_2022-09-06.txt"
+#Path to files: unique path for each airflow unit
+# -- This way the script navigates directly to the appropriate directory and doesn't need to be copied into the R script folder --
+# -- Shouldn't need to change any of these unless the file organization changes
+filePathCy <- "/data/airflow/reduce/cyclone-hx9"
+filePathDark <- "/data/airflow/reduce/darkthunder"
+filePathFre <- "/data/airflow/reduce/freflow"
+filePathPic <- "/data/airflow/reduce/picasso"
+filePathTurbo <- "/data/airflow/reduce/turbopanda"
 
-#Or generate a list of files, and create a function to read each one into a list of dataframes, then bind all dataframes together for a given airflow unit.
 
-#Actual col names
+#Column Names for sensor data. 
+# -- Taken from the Sensor Data Format.txt file -- 
+# -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
 colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
               "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
               "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
               "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
-              "npixsat", "offsets(0)", "Offsets(1)", "flagdata") 
-#Create function to read the .txt's into a table. 
+              "npixsat", "offsets(0)", "offsets(1)", "flagdata") 
+
+
+#Creation of lists of Files for each sensor
+# -- A single command saves each .txt as a seperate dataframe in a list. -- 
+# -- Function Arguments: 
+#      path: where to look for files
+#      pattern: What to match
+#      all.files: Include hidden files in search
+#      full.names: Include absolute path name in filename
+#      recursive: Search all subFolders
+fileListCy <- list.files(path=filePathCy, 
+                            pattern=".txt", 
+                            all.files=TRUE, 
+                            full.names=TRUE, 
+                            recursive=TRUE)
+fileListDark <- list.files(path=filePathDark, 
+                            pattern=".txt", 
+                            all.files=TRUE, 
+                            full.names=TRUE, 
+                            recursive=TRUE)
+fileListFre <- list.files(path=filePathFre, 
+                            pattern=".txt", 
+                            all.files=TRUE, 
+                            full.names=TRUE, 
+                            recursive=TRUE)
+fileListPic <- list.files(path=filePathPic, 
+                            pattern=".txt", 
+                            all.files=TRUE, 
+                            full.names=TRUE, 
+                            recursive=TRUE)
+fileListTurbo <- list.files(path=filePathTurbo, 
+                            pattern=".txt", 
+                            all.files=TRUE, 
+                            full.names=TRUE, 
+                            recursive=TRUE)
+
+
 ```
 
 ```{r}
 
-(fileList <- list.files(path="/data/airflow/reduce/turbopanda", pattern=".txt", all.files=TRUE, full.names=TRUE, recursive=TRUE))
+tempList <- c("turbopandaText/textAF_turbopanda_2022-09-06.txt",
+              "turbopandaText/textAF_turbopanda_2022-09-07.txt")
 
-listOfFiles <- lapply(fileList, function(x) read.table(x, header = FALSE)) 
+#Reads in each .txt as a dataset in a list. 
+(listOfFiles <- lapply(tempList, function(x) read.table(x, header = FALSE, 
+                                                           col.names = colNames) ) ) 
 
-
-#Read lines from the file
-data906 <- read.table(source906, col.names = colNames)
+#Join the unique dataframes in the list into one table
+(dataframe <- bind_rows(listOfFiles) )
 
 ```
 
