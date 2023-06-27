@@ -5,7 +5,9 @@ date: "2023-06-22"
 output: html_document
 ---
 
-## Preliminary "playing" with airflow data
+## AIRFLOW Sensor Data processing
+
+Detailed version of sensorDataframing1.R:  
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -16,14 +18,20 @@ library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
 library(tidyr)      #Data formatting
 library(lubridate)  #Date-Time Wrangling
-library(FITSio)     #Fits file parsing -- Probably unecessary, will likely remove later
+library(FITSio)     #Fits file parsing -- Probably unnecessary, will likely remove later
 ```
 
 ## Data Import
 
-Data Source: included text files
+The code is designed to go directly to the `/data/airflow/reduce` directory, and parse the `textAF_sensorName_date.txt` files from each day into one cohesive .csv for each sensor. 
 
-```{r DataImport: Variables, message=FALSE, warning=FALSE}
+### Step 1: Specify the path: 
+
+The path leads to the folder of reduced data for the sensor. It is assumed the directory structure is `/data/airflow`, containing a folder of reduced data (`reduce`), which contains a folder for each airflow sensor (ex. `turbopanda`), which contains a folder for each given date (ex. `2022-08-18`), which contains .fits files and one .txt file (ex. `textAF_turbopanda_2022-08-18.txt`). An example path to a specific .txt, then, is `/data/airflow/reduce/turbopanda/2022-08-18/textAF_turbopanda_2022-08-18`. 
+
+To avoid a separate path to each .txt file for each day for each sensor, the code starts in the directory of a given sensor, and creates a list of all files of .txt type. This reduces our paths to just 5, one per sensor. The path variables set below should direct to the folder for each sensor, one level above the individual date folders. 
+
+```{r DataImport: Step 1, message=FALSE, warning=FALSE}
 
 #Path to files: unique path for each airflow unit
 # -- This way the script navigates directly to the appropriate directory and doesn't need to be copied into the R script folder --
@@ -33,8 +41,13 @@ filePathDark <- "/data/airflow/reduce/darkthunder"
 filePathFre <- "/data/airflow/reduce/freflow"
 filePathPic <- "/data/airflow/reduce/picasso"
 filePathTurbo <- "/data/airflow/reduce/turbopanda"
+```
 
+### Step 2: Specify the column names: 
 
+The column names are taken from Sensor Data Format.txt, which offers further information on what each variable denotes specifically. `npha_Neo3.pro` creates 24 columns in the .txt, thus 24 column names. 
+
+``` {r DataImport: Step 2, message=FALSE, warning=FALSE}
 #Column Names for sensor data. 
 # -- Taken from the Sensor Data Format.txt file -- 
 # -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
@@ -44,7 +57,13 @@ colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo",
               "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
               "npixsat", "offsets(0)", "offsets(1)", "flagdata") 
 
+```
 
+### Step 3: Create the lists of file names
+
+Using the paths created in step 1, we create the lists of file names. Each sensor has a separate list. 
+
+``` {r DataImport: Step 3, message=FALSE, warning=FALSE}
 #Creation of lists of Files for each sensor
 # -- A single command saves each .txt as a seperate dataframe in a list. -- 
 # -- Function Arguments: 
@@ -78,7 +97,15 @@ fileListTurbo <- list.files(path=filePathTurbo,
                             all.files=TRUE, 
                             full.names=TRUE, 
                             recursive=TRUE)
+```
 
+### Step 4: Import data
+
+Using lapply and read.table, the code creates a list of dataframes, one dataframe per .txt file, and one list per sensor. The code assumes the .txt files have no headers, and that they have 24 columns. 
+
+Note: If any of the .txt files do not have 24 columns, the code will fail. 
+
+```{r DataImport: Step 4, message=FALSE, warning=FALSE}
 #Import data
 # -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
 # -- Function Arguments
@@ -93,7 +120,13 @@ dataListDark <- lapply(fileListDark, function(x) read.table(x, header = FALSE, c
 dataListFre <- lapply(fileListFre, function(x) read.table(x, header = FALSE, col.names = colNames) )
 dataListPic <- lapply(fileListPic, function(x) read.table(x, header = FALSE, col.names = colNames) )
 dataListTurbo <- lapply(fileListTurbo, function(x) read.table(x, header = FALSE, col.names = colNames) )
+```
 
+### Step 5: Bind dataframes
+
+Each list of dataframes is converted into a single dataframe using `bind_rows`, which takes the list of dataframes as the only argument. The end result is a single dataframe for each sensor, containing all information from that sensor. 
+
+``` {r DataImport: Step 5, message=FALSE, warning=FALSE}
 #Join individuals into masterDataframe
 # -- bind_rows takes a list of dataframes and combines them into one, appending rows to the end of the dataFrame. --
 dataFrameCy <- bind_rows(dataListCy) 
@@ -125,12 +158,106 @@ write.csv(dataframe, "testAirflowData.csv", row.names=FALSE)
 
 ## Data Tidying
 
+Data is rarely in a perfect form when first imported. 
+
+WARNING: HARDCODED BUG: The year is automatically overridden to be 2022. Will need to change when the script is changed. 
+
+
 ```{r}
+#Convert from Floatdate and floatTime to date-time object
+(dataDate <- dataframe %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman, r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0., Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0., offsets.1., flagdata) )
+```
+
+```{r DataTidying: Step 1, message=FALSE, warning=FALSE}
+#Convert from Floatdate and floatTime to date-time object
+dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate), 
+                                  day = as.integer((floatDate-month)*31), 
+                                  year = "2022"  ) %>% 
+                           mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+
 
 ```
 
 ## Data Export
 
-``` {r}
+With the data now in proper form for easier analysis, we export each sensor's dataframe as a unique .csv
 
+### Step 1: Specify Paths
+
+Here we specify the export paths of the .csvs, so that should it be wished, the location is not the same directory the R script was executed from. Changing the default path is not necessary but unlikely to be optimal. The paste function appends the name of the file to the specified path. This function by default adds a space between the strings being concatenated, but the additional argument `sep` overrides that with the user's preference. 
+
+```{r DataExport: Step 1, message=FALSE, warning=FALSE}
+#Default value of path
+exportPath <- ""
+
+#INSERT DESIRED PATH HERE
+#exportPath <- "/data/airflow/reduce/csv"
+
+#Add the export path to the beginning of the specific .csv name
+# -- Additional argument: sep: added to remove the usually added space
+exportPathCy <-paste(exportPath, "cyclone-hx9Data.csv", sep="")
+exportPathDark <-paste(exportPath, "darkthunderData.csv", sep="")
+exportPathFre <-paste(exportPath, "freflowData.csv", sep="")
+exportPathPic <-paste(exportPath, "picassoData.csv", sep="")
+exportPathTurbo <-paste(exportPath, "turbopandaData.csv", sep="")
+
+```
+
+### Step 2: Export as .csv
+
+Using the paths created above, the dataframes are exported to the desired locations as .csvs. 
+
+``` {r DataExport: Step 2, message=FALSE, warning=FALSE}
+#Export dataframe as a .csv
+write.csv(dataFrameCy, exportPathCy, row.names=FALSE)
+write.csv(dataFrameDark, exportPathDark, row.names=FALSE)
+write.csv(dataFrameFre, exportPathFre, row.names=FALSE)
+write.csv(dataFramePic, exportPathPic, row.names=FALSE)
+write.csv(dataFrameTurbo, exportPathTurbo, row.names=FALSE)
 ```
