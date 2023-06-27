@@ -89,6 +89,53 @@ dataFrameTurbo <- bind_rows(dataListTurbo)
 
 # -------- DATA TIDYING --------
 
+#Convert from Floatdate and floatTime to date-time object
+dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate), 
+                                      day = as.integer((floatDate-month)*31), 
+                                      year = "2022"  ) %>% 
+  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+         offsets.1., flagdata) 
+dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate), 
+                                          day = as.integer((floatDate-month)*31), 
+                                          year = "2022"  ) %>% 
+  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+         offsets.1., flagdata) 
+dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate), 
+                                        day = as.integer((floatDate-month)*31), 
+                                        year = "2022"  ) %>% 
+  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+         offsets.1., flagdata) 
+dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate), 
+                                        day = as.integer((floatDate-month)*31), 
+                                        year = "2022"  ) %>% 
+  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+         offsets.1., flagdata) 
+dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate), 
+                                            day = as.integer((floatDate-month)*31), 
+                                            year = "2022"  ) %>% 
+  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
+  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+         offsets.1., flagdata) 
+
 
 
 # -------- DATA EXPORTING --------

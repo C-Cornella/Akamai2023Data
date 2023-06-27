@@ -51,7 +51,7 @@ The column names are taken from Sensor Data Format.txt, which offers further inf
 #Column Names for sensor data. 
 # -- Taken from the Sensor Data Format.txt file -- 
 # -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
-colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
               "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
               "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
               "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
@@ -138,19 +138,17 @@ dataFrameTurbo <- bind_rows(dataListTurbo)
 
 ```{r}
 
-tempList <- c("turbopandaText/textAF_turbopanda_2022-09-06.txt",
-              "turbopandaText/textAF_turbopanda_2022-09-07.txt")
+tempList <- c("textAF_turbopanda_2022-08-18.txt")
 
 #Reads in each .txt as a dataset in a list. 
-listOfFiles <- lapply(tempList, function(x) read.table(x, header = FALSE, 
-                                                           col.names = colNames) )  
+listOfFiles <- lapply(tempList, function(x) read.table(x, header = FALSE) )  
 
 #Join the unique dataframes in the list into one table
 dataframe <- bind_rows(listOfFiles) 
 
 dataframe
 #Export dataframe as a .csv (just for funsies)
-write.csv(dataframe, "testAirflowData.csv", row.names=FALSE)
+#write.csv(dataframe, "testAirflowData.csv", row.names=FALSE)
 
 ```
 
@@ -166,8 +164,7 @@ WARNING: HARDCODED BUG: The year is automatically overridden to be 2022. Will ne
 ```{r}
 #Convert from Floatdate and floatTime to date-time object
 (dataDate <- dataframe %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman, r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0., Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0., offsets.1., flagdata) )
@@ -176,8 +173,7 @@ WARNING: HARDCODED BUG: The year is automatically overridden to be 2022. Will ne
 ```{r DataTidying: Step 1, message=FALSE, warning=FALSE}
 #Convert from Floatdate and floatTime to date-time object
 dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -185,8 +181,7 @@ dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate),
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
 dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -194,8 +189,7 @@ dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate),
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
 dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -203,8 +197,7 @@ dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate),
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
 dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -212,8 +205,7 @@ dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate),
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
 dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31), 
-                                  year = "2022"  ) %>% 
+                                  day = as.integer((floatDate-month)*31)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
