@@ -17,7 +17,7 @@ library(lubridate)  #Date-Time Wrangling
 ## Data Import
 Data source: 
 Year 2022: http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2022.dat
-Year 2023: http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2023.dat (Last gathered from as of 6/23)
+Year 2023: http://mkwc.ifa.hawaii.edu/archive/wx/cfht/cfht-wx.2023.dat (Last gathered from as of 6/29/23)
 
 Data Format can be found in the included (Weather Station Data Format.txt) file
 
