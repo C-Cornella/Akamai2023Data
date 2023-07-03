@@ -1,3 +1,6 @@
+# -------- SETUP --------
+
+#include libraries
 knitr::opts_chunk$set(echo = TRUE)
 
 library(dplyr)      #General Data wrangling
@@ -6,7 +9,18 @@ library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
 library(tidyr)      #Data formatting
 library(lubridate)  #Date-Time Wrangling
-library(FITSio)     #Fits file parsing -- Probably unecessary, will likely remove later
+library(FITSio)     #Fits file parsing -- Probably unnecessary, will likely remove later
+
+#Include optional argument for file export path
+args = commandArgs(trailingOnly=TRUE)
+#If no argument is supplied
+if (length(args)==0) {
+  #Default value of path
+  exportPath <- ""
+} else if (length(args)==1) {
+  # our new export path
+  exportPath=args[1]
+}
 
 # -------- DATA IMPORTING --------
 
@@ -90,9 +104,12 @@ dataFrameTurbo <- bind_rows(dataListTurbo)
 # -------- DATA TIDYING --------
 
 #Convert from Floatdate and floatTime to date-time object
+# -- floatDate is the month.(day/31). We simply reverse the math to get the month and day seperately. 
+# -- floatTime is the hour.(minute/60 + seconds/3600)
+# -- paste to turn the columns into a string that can be parsed by ymd_hm()
+# -- select to drop the excess columns
 dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate), 
-                                      day = as.integer((floatDate-month)*31), 
-                                      year = "2022"  ) %>% 
+                                      day = as.integer((floatDate-month)*31)) %>% 
   mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
   mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
   select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -100,8 +117,7 @@ dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate),
          Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
          offsets.1., flagdata) 
 dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate), 
-                                          day = as.integer((floatDate-month)*31), 
-                                          year = "2022"  ) %>% 
+                                          day = as.integer((floatDate-month)*31)) %>% 
   mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
   mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
   select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -109,8 +125,7 @@ dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate),
          Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
          offsets.1., flagdata) 
 dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate), 
-                                        day = as.integer((floatDate-month)*31), 
-                                        year = "2022"  ) %>% 
+                                        day = as.integer((floatDate-month)*31)) %>% 
   mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
   mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
   select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -118,8 +133,7 @@ dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate),
          Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
          offsets.1., flagdata) 
 dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate), 
-                                        day = as.integer((floatDate-month)*31), 
-                                        year = "2022"  ) %>% 
+                                        day = as.integer((floatDate-month)*31)) %>% 
   mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
   mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
   select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -127,8 +141,7 @@ dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate),
          Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
          offsets.1., flagdata) 
 dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate), 
-                                            day = as.integer((floatDate-month)*31), 
-                                            year = "2022"  ) %>% 
+                                            day = as.integer((floatDate-month)*31)) %>% 
   mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
   mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
   select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
@@ -136,15 +149,16 @@ dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate),
          Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
          offsets.1., flagdata) 
 
+#Add the Sensor name as a column
+dataFrameCy <- dataFrameCy %>% mutate(sensor="cyclone-hx9")
+dataframeDark <- dataFrameDark %>% mutate(sensor ="darkthunder")
+dataFrameFre <- dataFrameFre %>% mutate(sensor="freflow")
+dataFramePic <- dataFramePic %>% mutate(sensor="picasso")
+dataFrameTurbo <- dataFrameTurbo %>% mutate(sensor="turbopanda")
+
 
 
 # -------- DATA EXPORTING --------
-
-#Default value of path
-exportPath <- ""
-
-# -- INSERT DESIRED PATH HERE --
-#exportPath <- "/data/airflow/reduce/csv"
 
 #Add the export path to the beginning of the specific .csv name
 # -- Additional argument: sep: added to remove the usually added space
