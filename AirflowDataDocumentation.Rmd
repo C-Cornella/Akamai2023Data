@@ -207,12 +207,12 @@ dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate),
 ```
 
 ```{r DataTidying: Step 2, message=FALSE, warning=FALSE}
-#Add the Sensor name as a column
-dataFrameCy <- dataFrameCy %>% mutate(sensor="cyclone-hx9")
-dataframeDark <- dataFrameDark %>% mutate(sensor ="darkthunder")
-dataFrameFre <- dataFrameFre %>% mutate(sensor="freflow")
-dataFramePic <- dataFramePic %>% mutate(sensor="picasso")
-dataFrameTurbo <- dataFrameTurbo %>% mutate(sensor="turbopanda")
+#Add the Sensor name as a column and the location 
+dataFrameCy <- dataFrameCy %>% mutate(sensor="cyclone-hx9", location="1")
+dataframeDark <- dataFrameDark %>% mutate(sensor ="darkthunder", location="1")
+dataFrameFre <- dataFrameFre %>% mutate(sensor="freflow", location="1")
+dataFramePic <- dataFramePic %>% mutate(sensor="picasso", location="1")
+dataFrameTurbo <- dataFrameTurbo %>% mutate(sensor="turbopanda", location="1")
 ```
 
 
