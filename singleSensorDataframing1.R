@@ -102,4 +102,4 @@ writeLines(c(paste("Import path:", importPath),
              paste("Sensor Location:", sensorLocation) ), exportfPath)
                    
 #Export dataframe as a .csv
-write.csv(dataFrame, exportfPath, row.names=FALSE)
+write.csv(dataFrame, exportfPath, row.names=FALSE, append=TRUE)
