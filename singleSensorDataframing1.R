@@ -32,7 +32,7 @@ if (length(args)<4) {
 #Column Names for sensor data. 
 # -- Taken from the Sensor Data Format.txt file -- 
 # -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
-colNames <- c("floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
               "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
               "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
               "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
@@ -51,7 +51,7 @@ fileList <- list.files(path=importPath,
                          pattern=".txt", 
                          all.files=TRUE, 
                          full.names=TRUE, 
-                         recursive=TRUE)
+                         recursive=TRUE) 
 
 #Import data
 # -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
@@ -76,13 +76,14 @@ dataFrame <- bind_rows(dataList)
 # -- paste to turn the columns into a string that can be parsed by ymd_hm()
 # -- select to drop the excess columns
 dataFrame <- dataFrame %>% mutate(month=floor(floatDate), 
-                                      day = as.integer((floatDate-month)*31)) %>% 
-  mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
-  mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
-  select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
-         r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
-         Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
-         offsets.1., flagdata) 
+                                  day = as.integer((floatDate-month)*31)) %>% 
+                           mutate(hour = floor(floattime), 
+                                  minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm( paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
 
 #Add the Sensor name as a column
 dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
@@ -92,7 +93,7 @@ dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
 
 #Add the export path to the beginning of the specific .csv name
 # -- Additional argument: sep: added to remove the usually added space
-exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep="")
+(exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep=""))
 
 #Add information such as given import and export path
 #https://stackoverflow.com/questions/22875967/how-can-i-append-a-header-to-a-csv-file-i-am-writing-out-in-r
@@ -102,4 +103,4 @@ writeLines(c(paste("Import path:", importPath),
              paste("Sensor Location:", sensorLocation) ), exportfPath)
                    
 #Export dataframe as a .csv
-write.csv(dataFrame, exportfPath, row.names=FALSE, append=TRUE)
+write.table(dataFrame, exportfPath, row.names=FALSE, col.names=FALSE, append=TRUE, sep=",")

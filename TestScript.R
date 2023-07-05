@@ -11,4 +11,21 @@ if (length(args)<4) {
   sensorLocation=args[4]
 }
 
-(exportPath <-paste(exportPath, sensorName,"-", sensorLocation, ".csv", sep=""))
+library(dplyr)      #General Data wrangling
+library(readr)      #File reading and writing
+library(stringr)    #String reading
+library(knitr)      #Markdown file exporting
+library(tidyr) 
+
+dataframe <-  data.frame (
+  Training = c("Strength", "Stamina", "Other"),
+  Pulse = c(100, 150, 120),
+  Duration = c(60, 30, 45) )
+
+writeLines(c(paste("Import path:", importPath), 
+             paste("Export path:", exportPath), 
+             paste("Sensor:", sensorName), 
+             paste("Sensor Location:", sensorLocation) ), "test.csv")
+
+#Export dataframe as a .csv
+write.table(dataframe, "test.csv", row.names=FALSE, col.names=FALSE, append=TRUE)
