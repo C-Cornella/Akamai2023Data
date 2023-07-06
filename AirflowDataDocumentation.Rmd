@@ -158,24 +158,33 @@ dataFrameTurbo <- bind_rows(dataListTurbo)
 Data is rarely in a perfect form when first imported. We convert to a Date-time object, and add a column for the sensor name. The sensor name will be useful when comparing data from different sensors and graphing results. The simplest time to add that is now. 
 
 ```{r Function, message=FALSE, warning=FALSE}
+#Create functions to parse month and day
+# -- floatDate is the month.(day/31). We simply reverse the math to get the month and day seperately. 
+# -- the 31 of each month will render in days as "M.00000", so we have to check for that before we calculate the day. 
+#    If the decimal version of the floor of the floatDate is equivilent to the floatDate, then it's a .00000
+#    A hardcoded value of 31 will always be correct here. 
 parse_day <- function(floatDate, month){
-  if (floatDate %% 10 == 0 )
+  temp=as.numeric(paste(floor(floatDate), ".00000", sep=""))
+  if (temp == floatDate )
     return(31)
   else
-    return(as.integer((floatDate-month)*31))
+    return(as.integer(round((floatDate-month)*31)))
 }
 
+# -- parse_month simply checks, and if it's a 31, just subtract one from the value.
 parse_month <- function(floatDate) {
-  if (floatDate %% 10 == 0 )
+  temp=as.numeric(paste(floor(floatDate), ".00000", sep=""))
+  if (temp == floatDate )
     return(floor(floatDate-1))
-  else
+  else 
     return(floor(floatDate))
+  
 }
 ```
 
 ```{r DataTidying: Step 1, message=FALSE, warning=FALSE}
 #Convert from Floatdate and floatTime to date-time object
-# -- floatDate is the month.(day/31). We simply reverse the math to get the month and day seperately. 
+# -- parse_day and parse_month as above
 # -- floatTime is the hour.(minute/60 + seconds/3600)
 # -- paste to turn the columns into a string that can be parsed by ymd_hm()
 # -- select to drop the excess columns
