@@ -28,4 +28,13 @@ writeLines(c(paste("Import path:", importPath),
              paste("Sensor Location:", sensorLocation) ), "test.csv")
 
 #Export dataframe as a .csv
-write.table(dataframe, "test.csv", row.names=FALSE, col.names=FALSE, append=TRUE)
+write.table(dataframe, "test.csv", row.names=FALSE, col.names=FALSE, append=TRUE, sep=",")
+
+
+#scratch SQL
+query <- dbSendQuery()
+dbBind(query, list)
+dbFetch(query)
+
+dbClearResults(query)
+

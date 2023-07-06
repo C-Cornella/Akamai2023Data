@@ -47,11 +47,11 @@ colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo",
 #      all.files: Include hidden files in search
 #      full.names: Include absolute path name in filename
 #      recursive: Search all subFolders
-fileList <- list.files(path=importPath, 
+(fileList <- list.files(path=importPath, 
                          pattern=".txt", 
                          all.files=TRUE, 
                          full.names=TRUE, 
-                         recursive=TRUE) 
+                         recursive=TRUE) )
 
 #Import data
 # -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --

@@ -36,6 +36,7 @@ if (length(args)==0) {
 }
 ```
 
+
 ## Data Import
 
 The code is designed to go directly to the `/data/airflow/reduce` directory, and parse the `textAF_sensorName_date.txt` files from each day into one cohesive .csv for each sensor. 
@@ -156,46 +157,62 @@ dataFrameTurbo <- bind_rows(dataListTurbo)
 
 Data is rarely in a perfect form when first imported. We convert to a Date-time object, and add a column for the sensor name. The sensor name will be useful when comparing data from different sensors and graphing results. The simplest time to add that is now. 
 
+```{r Function, message=FALSE, warning=FALSE}
+parse_day <- function(floatDate, month){
+  if (floatDate %% 10 == 0 )
+    return(31)
+  else
+    return(as.integer((floatDate-month)*31))
+}
+
+parse_month <- function(floatDate) {
+  if (floatDate %% 10 == 0 )
+    return(floor(floatDate-1))
+  else
+    return(floor(floatDate))
+}
+```
+
 ```{r DataTidying: Step 1, message=FALSE, warning=FALSE}
 #Convert from Floatdate and floatTime to date-time object
 # -- floatDate is the month.(day/31). We simply reverse the math to get the month and day seperately. 
 # -- floatTime is the hour.(minute/60 + seconds/3600)
 # -- paste to turn the columns into a string that can be parsed by ymd_hm()
 # -- select to drop the excess columns
-dataFrameCy <- dataFrameCy %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31)) %>% 
+dataFrameCy <- dataFrameCy %>% mutate(month=parse_month(floatDate), 
+                                  day = parse_day(floatDate, month)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
                                   r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
-dataFrameDark <- dataFrameDark %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31)) %>% 
+dataFrameDark <- dataFrameDark %>% mutate(month=parse_month(floatDate), 
+                                  day = parse_day(floatDate, month)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
                                   r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
-dataFrameFre <- dataFrameFre %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31)) %>% 
+dataFrameFre <- dataFrameFre %>% mutate(month=parse_month(floatDate), 
+                                  day = parse_day(floatDate, month)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
                                   r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
-dataFramePic <- dataFramePic %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31)) %>% 
+dataFramePic <- dataFramePic %>% mutate(month=parse_month(floatDate), 
+                                  day = parse_day(floatDate, month)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
                                   r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
-dataFrameTurbo <- dataFrameTurbo %>% mutate(month=floor(floatDate), 
-                                  day = as.integer((floatDate-month)*31)) %>% 
+dataFrameTurbo <- dataFrameTurbo %>% mutate(month=parse_month(floatDate), 
+                                  day = parse_day(floatDate, month)) %>% 
                            mutate(hour = floor(floattime), minute=as.integer(round((floattime-hour)*60)) ) %>% 
                            mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
