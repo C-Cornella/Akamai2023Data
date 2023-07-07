@@ -32,7 +32,7 @@ if (length(args)<4) {
 #Column Names for sensor data. 
 # -- Taken from the Sensor Data Format.txt file -- 
 # -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
-colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+colNames <- c("year", "month", "day", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
               "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
               "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
               "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
@@ -47,11 +47,7 @@ colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo",
 #      all.files: Include hidden files in search
 #      full.names: Include absolute path name in filename
 #      recursive: Search all subFolders
-fileList <- list.files(path=importPath, 
-                         pattern=".txt", 
-                         all.files=TRUE, 
-                         full.names=TRUE, 
-                         recursive=TRUE) 
+#fileList <- list.files(path=importPath, pattern=".txt", all.files=TRUE, full.names=TRUE, recursive=TRUE) 
 
 #Import data
 # -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
@@ -62,51 +58,29 @@ fileList <- list.files(path=importPath,
 #             x: element to read
 #             header: Assume no header in the files
 #             col.names: Read in data assigning these names to each column
-dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )  
+#dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )  
 
 #Join individuals into masterDataframe
 # -- bind_rows takes a list of dataframes and combines them into one, appending rows to the end of the dataFrame. --
-dataFrame <- bind_rows(dataList) 
+#dataFrame <- bind_rows(dataList) 
+
+dataFrame <- read.table("textAF_cyclone-hx9_2022-08-18.txt", header=FALSE, col.names=colNames)
 
 # -------- DATA TIDYING --------
 
-#Create functions to parse month and day
-# -- floatDate is the month.(day/31). We simply reverse the math to get the month and day seperately. 
-# -- the 31 of each month will render in days as "M.00000", so we have to check for that before we calculate the day. 
-#    If the decimal version of the floor of the floatDate is equivilent to the floatDate, then it's a .00000
-#    A hardcoded value of 31 will always be correct here. 
-parse_day <- function(floatDate, month){
-  temp=as.numeric(paste(floor(floatDate), ".00000", sep=""))
-  if (temp == floatDate )
-    return(31)
-  else
-    return(as.integer(round((floatDate-month)*31)))
-}
 
-# -- parse_month simply checks, and if it's a 31, just subtract one from the value.
-parse_month <- function(floatDate) {
-  temp=as.numeric(paste(floor(floatDate), ".00000", sep=""))
-  if (temp == floatDate )
-    return(floor(floatDate-1))
-  else 
-    return(floor(floatDate))
-  
-}
-
-#Convert from Floatdate and floatTime to date-time object
-# -- parse_day and parse_month as above
+#Convert from floatTime to date-time object
 # -- floatTime is the hour.(minute/60 + seconds/3600)
 # -- paste to turn the columns into a string that can be parsed by ymd_hm()
 # -- select to drop the excess columns
-dataFrame <- dataFrame %>% mutate(month=parse_month(floatDate), 
-                                  day = parse_day(floatDate, month)) %>% 
-                           mutate(hour = floor(floattime), 
+dataFrame <- dataFrame %>% mutate(hour = floor(floattime),
                                   minute=as.integer(round((floattime-hour)*60)) ) %>% 
-                           mutate(dateTime= ymd_hm( paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
                            select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
                                   r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
                                   Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
                                   offsets.1., flagdata) 
+
 
 #Add the Sensor name as a column
 dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
@@ -123,7 +97,8 @@ dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
 writeLines(c(paste("Import path:", importPath), 
              paste("Export path:", exportPath), 
              paste("Sensor:", sensorName), 
-             paste("Sensor Location:", sensorLocation) ), exportfPath)
+             paste("Sensor Location:", sensorLocation), 
+             paste("Day Exported: ", date() ) ), exportfPath)
                    
 #Export dataframe as a .csv
 write.table(dataFrame, exportfPath, row.names=FALSE, col.names=FALSE, append=TRUE, sep=",")

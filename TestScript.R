@@ -17,24 +17,44 @@ library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
 library(tidyr) 
 
-dataframe <-  data.frame (
-  Training = c("Strength", "Stamina", "Other"),
-  Pulse = c(100, 150, 120),
-  Duration = c(60, 30, 45) )
+colNames <- c("year", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+              "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
+              "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
+              "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
+              "npixsat", "offsets(0)", "offsets(1)", "flagdata") 
 
-writeLines(c(paste("Import path:", importPath), 
-             paste("Export path:", exportPath), 
-             paste("Sensor:", sensorName), 
-             paste("Sensor Location:", sensorLocation) ), "test.csv")
+fileList <- list.files(path=importPath, 
+                       pattern=".txt", 
+                       all.files=TRUE, 
+                       full.names=TRUE, 
+                       recursive=TRUE) 
 
-#Export dataframe as a .csv
-write.table(dataframe, "test.csv", row.names=FALSE, col.names=FALSE, append=TRUE, sep=",")
+dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )
+dataFrame <- bind_rows(dataList) 
+
+
+parse_day <- function(floatDate, month){
+  #temp=as.numeric(paste(floor(floatDate), ".00000", sep=""))
+  ifelse({as.integer(round((floatDate-floor(floatDate))*31))==0}, 
+         {return(31)}, 
+         { return(as.integer(round((floatDate-month)*31)))} )
+}
+
+# -- parse_month simply checks, and if it's a 31, just subtract one from the value.
+parse_month <- function(floatDate) {
+  ifelse({as.integer(round((floatDate-floor(floatDate))*31))==0},
+         {return(floor(floatDate)-1)},
+         {return(floor(floatDate)) })
+  
+}
+
+(month <- parse_month(8.5) )
+(day <- parse_day(8.5, month) )
 
 
 #scratch SQL
-query <- dbSendQuery()
-dbBind(query, list)
-dbFetch(query)
+#query <- dbSendQuery()
+#dbBind(query, list)
+#dbFetch(query)
 
-dbClearResults(query)
-
+#dbClearResults(query)
