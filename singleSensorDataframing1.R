@@ -47,7 +47,7 @@ colNames <- c("year", "month", "day", "floatDate", "floattime", "r0_1", "Cn2", "
 #      all.files: Include hidden files in search
 #      full.names: Include absolute path name in filename
 #      recursive: Search all subFolders
-#fileList <- list.files(path=importPath, pattern=".txt", all.files=TRUE, full.names=TRUE, recursive=TRUE) 
+fileList <- list.files(path=importPath, pattern=".txt", all.files=TRUE, full.names=TRUE, recursive=TRUE) 
 
 #Import data
 # -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
@@ -58,13 +58,13 @@ colNames <- c("year", "month", "day", "floatDate", "floattime", "r0_1", "Cn2", "
 #             x: element to read
 #             header: Assume no header in the files
 #             col.names: Read in data assigning these names to each column
-#dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )  
+dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )  
 
 #Join individuals into masterDataframe
 # -- bind_rows takes a list of dataframes and combines them into one, appending rows to the end of the dataFrame. --
-#dataFrame <- bind_rows(dataList) 
+dataFrame <- bind_rows(dataList) 
 
-dataFrame <- read.table("textAF_cyclone-hx9_2022-08-18.txt", header=FALSE, col.names=colNames)
+
 
 # -------- DATA TIDYING --------
 
@@ -90,7 +90,7 @@ dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
 
 #Add the export path to the beginning of the specific .csv name
 # -- Additional argument: sep: added to remove the usually added space
-(exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep=""))
+exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep="")
 
 #Add information such as given import and export path
 #https://stackoverflow.com/questions/22875967/how-can-i-append-a-header-to-a-csv-file-i-am-writing-out-in-r
@@ -101,4 +101,4 @@ writeLines(c(paste("Import path:", importPath),
              paste("Day Exported: ", date() ) ), exportfPath)
                    
 #Export dataframe as a .csv
-write.table(dataFrame, exportfPath, row.names=FALSE, col.names=FALSE, append=TRUE, sep=",")
+write.table(dataFrame, exportfPath, row.names=FALSE, col.names=TRUE, append=TRUE, sep=",")
