@@ -93,7 +93,6 @@ dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
 exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep="")
 
 #Add information such as given import and export path
-#https://stackoverflow.com/questions/22875967/how-can-i-append-a-header-to-a-csv-file-i-am-writing-out-in-r
 writeLines(c(paste("Import path:", importPath), 
              paste("Export path:", exportPath), 
              paste("Sensor:", sensorName), 

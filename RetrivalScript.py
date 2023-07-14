@@ -1,10 +1,13 @@
 import psycopg2
+import argparse
 
 HOST = "128.171.168.82"
 DATABASE = "uh88weather"
 PASSWORD = "jH9tqgZBvp"
 USER = "weather_read"
 CONNECT_TIMEOUT = 5
+
+#take in export location as argument?
 
 # SELECT (time, ...) FROM table_name WHERE time > unix_time1 AND time < unix_time2
 
