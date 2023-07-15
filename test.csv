@@ -1,7 +1,0 @@
-Import path: /data/airflow/reduce/cyclone-hx9
-Export path: /data/airflow/analysis/
-Sensor: cyclone-hx9
-Sensor Location: 1
-"Strength" 100 60
-"Stamina" 150 30
-"Other" 120 45

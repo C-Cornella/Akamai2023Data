@@ -1,3 +1,4 @@
+As produced by npha_Neo3b.pro
 - year, month, and day is the nice version of the date the data was gathered
 - floatdate is the date in decimal format, xx.yyyy where xx is the month and yyy is the decimal fraction of the day of the month (i.e. day the month/31)
 - floattime is the same for time: xx.yyy means xx o’clock (in 24h format) and .yyy =minutes/60 + seconds/3600

@@ -8,6 +8,14 @@ USER = "weather_read"
 CONNECT_TIMEOUT = 5
 
 #take in export location as argument?
+#https://stackoverflow.com/questions/22846858/python-pass-arguments-to-a-script
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-e", "--export", type=int)
+
+args = parser.parse_args()
+col = args.position
+sample = args.sample
 
 # SELECT (time, ...) FROM table_name WHERE time > unix_time1 AND time < unix_time2
 

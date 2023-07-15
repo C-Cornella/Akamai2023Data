@@ -1,0 +1,6 @@
+sensor, date begun, date ended, location description, location number
+cyclone-hx9, 2022-08-18, 2022-10-17, on spider arm atop tube by secondary mirror, 1
+darkthunder, 2022-08-31, 2022-10-27, base of dome slit opening right side, 1
+freflow, 2022-08-18, 2022-10-20, above control room window horizontally protruding, 1
+picasso, 2022-08-18, 2023-04-16, above control room window vertically, 1
+turbopanda, 2022-08-18, 2023-01-19, top of dome slit opening left side, 1
