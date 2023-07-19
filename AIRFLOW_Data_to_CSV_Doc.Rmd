@@ -1,0 +1,178 @@
+---
+title: "AIRFLOW Data to .CSV Documentation"
+author: "Catherine Cornella"
+date: "2023-06-22"
+output: html_document
+---
+
+## AIRFLOW Sensor Data processing
+
+Detailed version of sensor_Dataframing1_to_csv1.R:  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)      #General Data wrangling
+library(readr)      #File reading and writing
+library(stringr)    #String reading
+library(knitr)      #Markdown file exporting
+library(tidyr)      #Data formatting
+library(lubridate)  #Date-Time Wrangling
+library(FITSio)     #Fits file parsing -- Probably unnecessary, will likely remove later
+```
+
+## Arguments
+
+The arguments passed in and required are for importPath (where to look for the .txt files), exportPath (where to create the .csv files), sensorName (which sensor we're processing, since we're only doing one), and sensorLocation (where in the dome is the sensor, a text description with no spaces).
+
+If we get less than 4 arguments, throw an error and don't run. 
+If we get 4, all fine and dandy
+If we get more than 4, throw an error and refuse to run. 
+
+```{r ExportPaths, eval=FALSE}
+#Process arguments
+args = commandArgs(trailingOnly=TRUE)
+#If no argument is supplied
+if (length(args)<4) {
+  stop("Missing Argument: Required ImportPath, ExportPath, SensorName, SensorLocation", call.=FALSE)
+} else if (length(args)==4) {
+  importPath=args[1]
+  exportPath=args[2]
+  sensorName=args[3]
+  sensorLocation=args[4]
+} else {
+  stop("Excess Arguments: Required ImportPath, ExportPath, SensorName, SensorLocation", call.=FALSE)
+}
+```
+
+
+## Data Import
+
+The code is designed to go directly to the `/data/airflow/reduce` directory, and parse the `textAF_sensorName_date.txt` files from each day into one cohesive .csv for the sensor being run on. 
+
+The import path leads to the folder of reduced data for the sensor. It is assumed the directory structure is `/data/airflow`, containing a folder of reduced data (`reduce`), which contains a folder for each airflow sensor (ex. `turbopanda`), which contains a folder for each given date (ex. `2022-08-18`), which contains .fits files and one .txt file (ex. `textAF_turbopanda_2022-08-18.txt`). An example path to a specific .txt, then, is `/data/airflow/reduce/turbopanda/2022-08-18/textAF_turbopanda_2022-08-18`. 
+
+To avoid a separate path to each .txt file for each day for the sensor, the code starts in the directory of the sensor, and creates a list of all files of .txt type. The path variable is obtained from the argument, and should direct to the folder for the sensor, one level above the individual date folders. 
+
+### Step 1: Specify the column names: 
+
+The column names are taken from Sensor Data Format.txt, which offers further information on what each variable denotes specifically. `npha_Neo3b.pro` creates 27 columns in the .txt, thus 27 column names. 
+
+``` {r DataImport: Step 1, message=FALSE, warning=FALSE}
+#Column Names for sensor data. 
+# -- Taken from the Sensor Data Format.txt file -- 
+# -- Names provided from the npha_Neo3.pro reduction routine: Shouldn't need to be changed unless the reduction routine is changed -- 
+colNames <- c("year", "month", "day", "floatDate", "floattime", "r0_1", "Cn2", "residual_Kolmo", 
+              "r0Kalman", "L0Kalman", "residual_Kalman", "r0power", "r0expo", 
+              "residual_power", "r0max", "r0min", "Cn2max", "Cn2min",
+              "r0noTT(0)", "Cn2noTT", "r0noTT(1)", "residual_KolmonoTT", "imamax", 
+              "npixsat", "offsets(0)", "offsets(1)", "flagdata") 
+
+```
+
+### Step 2: Create the lists of file names
+
+Using the path given in the argument, we create the list of file names. 
+
+``` {r DataImport: Step 2, message=FALSE, warning=FALSE}
+#Creation of lists of Files for each sensor
+# -- A single command saves each .txt as a seperate dataframe in a list. -- 
+# -- Function Arguments: 
+#      path: where to look for files
+#      pattern: What to match
+#      all.files: Include hidden files in search
+#      full.names: Include absolute path name in filename
+#      recursive: Search all subFolders
+fileList <- list.files(path=importPath, pattern=".txt", all.files=TRUE, full.names=TRUE, recursive=TRUE)
+```
+
+### Step 3: Import data
+
+Using lapply and read.table, the code creates a list of dataframes, one dataframe per .txt file. The code assumes the .txt files have no headers, and that they have 27 columns. 
+
+Note: If any of the .txt files do not have 27 columns, the code will fail. 
+
+```{r DataImport: Step 3, message=FALSE, warning=FALSE}
+#Import data
+# -- Runs read.table on every file in the file list, saving each dataframe in a list of dataframes. --
+# -- Function Arguments
+#    lapply: 
+#        fileListExample: List to execute on
+#        function to execute: Read.table
+#             x: element to read
+#             header: Assume no header in the files
+#             col.names: Read in data assigning these names to each column
+dataList <- lapply(fileList, function(x) read.table(x, header = FALSE, col.names = colNames) )
+```
+
+### Step 4: Bind dataframes
+
+Each list of dataframes is converted into a single dataframe using `bind_rows`, which takes the list of dataframes as the only argument. The end result is a single dataframe containing all information from the sensor. 
+
+``` {r DataImport: Step 4, message=FALSE, warning=FALSE}
+#Join individuals into masterDataframe
+# -- bind_rows takes a list of dataframes and combines them into one, appending rows to the end of the dataFrame. --
+dataFrame <- bind_rows(dataList) 
+```
+
+
+## Data Tidying
+
+Data is rarely in a perfect form when first imported. We convert to a Date-time object, and add a column for the sensor name. The sensor name will be useful when comparing data from different sensors and graphing results, same with location. The simplest time to add that is now. 
+
+```{r DataTidying: Step 1, message=FALSE, warning=FALSE}
+#Convert from floatTime to date-time object
+# -- floatTime is the hour.(minute/60 + seconds/3600)
+# -- paste to turn the columns into a string that can be parsed by ymd_hm()
+# -- select to drop the excess columns
+dataFrame <- dataFrame %>% mutate(hour = floor(floattime),
+                                  minute=as.integer(round((floattime-hour)*60)) ) %>% 
+                           mutate(dateTime= ymd_hm(paste(year, month, day, hour, minute), tz="HST") ) %>% 
+                           select(dateTime, r0_1, Cn2, residual_Kolmo, r0Kalman, L0Kalman, residual_Kalman,
+                                  r0power, r0expo, residual_power, r0max, r0min, Cn2max, Cn2min, r0noTT.0.,
+                                  Cn2noTT, r0noTT.1., residual_KolmonoTT, imamax, npixsat, offsets.0.,
+                                  offsets.1., flagdata) 
+
+```
+
+```{r DataTidying: Step 2, message=FALSE, warning=FALSE}
+#Add the Sensor name as a column
+dataFrame <- dataFrame %>% mutate(sensor=sensorName, location=sensorLocation)
+```
+
+## Data Export
+
+With the data now in proper form for easier analysis, we export the dataframe as a .csv
+
+### Step 1: Specify Paths
+
+Our destination is provided by the argument, so we simply add in the name of the .csv, following the format of `sensorName-location.csv`. The paste function appends the name of the file to the specified path. This function by default adds a space between the strings being concatenated, but the additional argument `sep` overrides that with the user's preference. 
+
+```{r DataExport: Step 1, message=FALSE, warning=FALSE}
+#Add the export path to the beginning of the specific .csv name
+# -- Additional argument: sep: added to remove the usually added space
+exportfPath <-paste(exportPath, sensorName, "-", sensorLocation, ".csv", sep="")
+
+```
+
+### Step 2: Write information
+
+For the purposes of record-keeping and double-checking past work, the date and time processed and arguments given are written to the file. 
+
+```{r DataExport: Step 2, message=FALSE, warning=FALSE}
+#Add information such as given import and export path
+writeLines(c(paste("Import path:", importPath), 
+             paste("Export path:", exportPath), 
+             paste("Sensor:", sensorName), 
+             paste("Sensor Location:", sensorLocation), 
+             paste("Day Exported: ", date() ) ), exportfPath)
+```
+
+### Step 3: Export as .csv
+
+Using the paths created above, the dataframe is exported to the desired locations as a .csv. The column names are included, since it is just as easy to skip over them, and it increases readability. 
+
+``` {r DataExport: Step 3, message=FALSE, warning=FALSE}
+#Export dataframe as a .csv
+write.table(dataFrame, exportfPath, row.names=FALSE, col.names=TRUE, append=TRUE, sep=",")
+```

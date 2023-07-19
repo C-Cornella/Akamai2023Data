@@ -11,7 +11,7 @@ The data is expected to be reduced by `npha_Neo3b.pro` reduction script.
 ## How to Run
 
 
-To execute, run `Rscript sensorDataframing1.R ImportPath ExportPath SensorName SensorLocation` from your command line. 
+To execute, run `Rscript sensor_to_csv1.R ImportPath ExportPath SensorName SensorLocation` from your command line. 
 
 `ImportPath` is the location to begin looking for the .txt files
 
@@ -19,7 +19,7 @@ To execute, run `Rscript sensorDataframing1.R ImportPath ExportPath SensorName S
 
 `SensorName` is required to export the name of the sensor to the .csv file. 
 
-`Location` is the location of the sensor, also exported to the .csv file. 
+`Location` is the location of the sensor within the dome, also exported to the .csv file. 
 
 
 ## Usual Errors
