@@ -7,7 +7,7 @@ output: html_document
 
 ## AIRFLOW Sensor Data processing
 
-Detailed version of sensor_Dataframing1_to_csv1.R:  
+Detailed version of sensor_to_csv1.R:  
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
