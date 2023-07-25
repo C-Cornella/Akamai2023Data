@@ -53,34 +53,69 @@ with psycopg2.connect(host=HOST, dbname=DATABASE, user=USER, password=PASSWORD, 
             # -- adamcomproom ---
             acr_query ="SELECT time, rack1, rack2, rack3 FROM adamcomproom WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd) + "LIMIT 5"
             cur.execute(acr_query)
-            acr_rows = cur.fetchall()
+            acr_Trows = cur.fetchall()
             # -- adamtube ------ 
             at_query ="SELECT time, mirroreast, mirrorwest, uppertubesouth, tubesnifseast FROM adamtube WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(at_query)
-            at_rows = cur.fetchall()
+            at_Trows = cur.fetchall()
             # -- boltwood ------
             bw_query ="SELECT time, temp, windspeed, skytempdiff FROM boltwood WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(bw_query)
-            bw_rows = cur.fetchall()
+            bw_Trows = cur.fetchall()
             # -- cfht --------
             cfht_query ="SELECT time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir FROM cfht WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(cfht_query)
-            cfht_rows = cur.fetchall()
+            cfht_Trows = cur.fetchall()
             # -- tcs -------
             tcs_query ="SELECT time, domeaz, ha, dec, slit FROM tcs WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(tcs_query)
-            tcs_rows = cur.fetchall()
+            tcs_Trows = cur.fetchall()
             # -- ups0 -------
             ups_query ="SELECT time, ambienttemp FROM ups0 WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd) + " LIMIT 5"
             cur.execute(ups_query)
-            ups_rows = cur.fetchall()
+            ups_Trows = cur.fetchall()
             
         except:
             print("Error reading from database")
             raise
 
     try:
+        # ---- GET RID OF THE GODDAMN TUPLES ----
         
+        acr_rows = [ [] for _ in range(len(acr_Trows)) ]
+        for row in acr_Trows:
+            time = datetime.datetime.fromtimestamp(row[0])
+            temp=[]
+            temp.append(time)
+            temp.append(list(row[1:])
+            acr_rows.append(temp)
+            
+        at_rows = []
+        for row in at_Trows:
+            time = datetime.datetime.fromtimestamp(row[0])
+            temp=[]
+            temp.append(time)
+            temp.append(list(row[1:])
+            at_rows.append(temp)
+        
+        
+        # ---- DEAL WITH DATES ---- 
+        
+        #If we don't deal with dates and times now it's going to throw off the dataframe merging.
+        #Strategy is to turn all unix timestamps into dateTime, drop the seconds and round to every 5 minutes.
+        #The problem is rounding all the data in the row to every 5 minutes. 
+        #If we start with the time first and then go through again and say if the times of two rows are the same, 
+        #average the values of the two, for most things, it should be okay. 
+        
+        '''
+        for row in acr_rows:
+            listRow= list(row)
+            listRow[0]= datetime.datetime.fromtimestamp(listRow[0])
+        
+        for row in at_rows:
+            listRow= list(row)
+            listRow[0]= datetime.datetime.fromtimestamp(listRow[0])
+        '''
       
         # ---- ROWS TO DATAFRAMES ----
       
