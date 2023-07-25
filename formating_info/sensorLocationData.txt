@@ -1,0 +1,6 @@
+sensor, date begun, date ended, location description, round of readings
+cyclone-hx9, 2022-08-18, 2022-10-17, telescope_spider_south, 1
+darkthunder, 2022-08-31, 2022-10-27, dome_slit_bottom_horizontal, 1
+freflow, 2022-08-18, 2022-10-20, mez_obsroom_horizontal, 1
+picasso, 2022-08-18, 2023-04-16, mez_obsroom_vertical, 1
+turbopanda, 2022-08-18, 2023-01-19, dome_slit_top_vertical, 1
