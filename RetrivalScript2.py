@@ -1,7 +1,9 @@
-import psycopg2
-import datetime
-import csv
-#import argparse
+import psycopg2     #SQL commands
+import datetime     #datatime shenanigans
+import csv          #csv wrangling
+import pandas as pd #dataframe stuff
+import argparse     #argument parsing
+import os           #File cleanup
 
 HOST = "128.171.168.82"
 DATABASE = "uh88weather"
@@ -10,34 +12,38 @@ USER = "grafana"
 CONNECT_TIMEOUT = 5
 
 # ---- PROCESS ARGUMENTS -----
-#take in export location as argument?
-#https://stackoverflow.com/questions/22846858/python-pass-arguments-to-a-script
+#take in start time, end time, and export location as argument
+#Assuming format of type yyyy-mm-dd-hhmm
+parser = argparse.ArgumentParser()
+parser.add_argument("-st", "--startTime")
+parser.add_argument("-et", "--endTime")
+parser.add_argument("-ep", "--exportPath")
 
-#parser = argparse.ArgumentParser()
-#parser.add_argument("-e", "--export", type=int)
+args = parser.parse_args()
+startArg = args.startTime
+endArg = args.endTime
+exportPath=args.exportPath
 
-#args = parser.parse_args()
-#col = args.position
-#sample = args.sample
-
-# SELECT (time, ...) FROM table_name WHERE time > unix_time1 AND time < unix_time2
-
-#If we prompt the user for the time period they want the data, 
+#We prompt the user for the time period they want the data, 
 #then we need to convert the argument passed in to unix time
-#
-timeStart= datetime.datetime(2022, 8, 17, 23, 59, 55 ).timestamp()
-timeEnd= datetime.datetime(2023, 4, 17).timestamp()
-exportPath="csvs/"
+#Assuming format of type yyyy-mm-dd-hhmm (0123-56-78-1011)
+year=int(startArg[0:4])
+month=int(startArg[5:7])
+day=int(startArg[8:10])
+hour=int(startArg[11:13])
+minute=int(startArg[13:15])
+timeStart= datetime.datetime(year, month, day, hour, minute).timestamp()
+year=int(endArg[0:4]) 
+month=int(endArg[5:7])
+day=int(endArg[8:10]) 
+hour=int(endArg[11:13])
+minute=int(endArg[13:15])
+timeEnd= datetime.datetime(year, month, day, hour, minute).timestamp()
 
 # ---- SETUP FOR EXPORT ----
 
-#Create the export paths for each individual CSV file. 
-exportACR= exportPath+ "acrOutput.csv"
-exportAT=  exportPath+ "atOutput.csv"
-exportBW=  exportPath+ "bwOutput.csv"
-exportCFHT=exportPath+ "cfhtOutput.csv"
-exportTCS= exportPath+ "tcsOutput.csv"
-exportUPS= exportPath+ "upsOutput.csv"
+#Create the export paths for the .csv file. 
+exportDF=  exportPath+ "engineeringData.csv"
             
 # ---- RUN SQL QUERIES AND EXPORT RESULTS ----
 
@@ -45,23 +51,23 @@ with psycopg2.connect(host=HOST, dbname=DATABASE, user=USER, password=PASSWORD, 
     with conn.cursor() as cur:
         try:
             # -- adamcomproom ---
-            acr_query ="SELECT time, rack1, rack2, rack3 FROM adamcomproom WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
+            acr_query ="SELECT time, rack1, rack2, rack3 FROM adamcomproom WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd) + "LIMIT 5"
             cur.execute(acr_query)
             acr_rows = cur.fetchall()
             # -- adamtube ------ 
-            at_query ="SELECT time, mirroreast, mirrorwest, uppertubesouth, tubesnifseast FROM adamtube WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
+            at_query ="SELECT time, mirroreast, mirrorwest, uppertubesouth, tubesnifseast FROM adamtube WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(at_query)
             at_rows = cur.fetchall()
             # -- boltwood ------
-            bw_query ="SELECT time, temp, windspeed, skytempdiff FROM boltwood WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
+            bw_query ="SELECT time, temp, windspeed, skytempdiff FROM boltwood WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(bw_query)
             bw_rows = cur.fetchall()
             # -- cfht --------
-            cfht_query ="SELECT time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir FROM cfht WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
+            cfht_query ="SELECT time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir FROM cfht WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(cfht_query)
             cfht_rows = cur.fetchall()
             # -- tcs -------
-            tcs_query ="SELECT time, domeaz, ha, dec, slit FROM tcs WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
+            tcs_query ="SELECT time, domeaz, ha, dec, slit FROM tcs WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)+ "LIMIT 5"
             cur.execute(tcs_query)
             tcs_rows = cur.fetchall()
             # -- ups0 -------
@@ -75,49 +81,56 @@ with psycopg2.connect(host=HOST, dbname=DATABASE, user=USER, password=PASSWORD, 
 
     try:
         
-        acr_out =csv.writer(open(exportACR, "w"))
-        acr_out.writerow(['time','rack1', 'rack2', 'rack3'])
-        for row in acr_rows: #adamcomproom
-            #time, rack1, rack2, rack3
-            acr_out.writerow(row)
-                    
+      
+        # ---- ROWS TO DATAFRAMES ----
+      
+        #adamcomproom
+        columnslist = ("time" ,"rack1", "rack2", "rack3")
+        acr_df=pd.DataFrame(acr_rows, columns=columnslist)
         
-        at_out = csv.writer(open(exportAT, "w"))     
-        at_out.writerow(['time', 'mirroreast', 'mirrorwest', 'uppertubesouth', 'tubesnifseast'])
-        for row in at_rows: #adamtube
-            #time, mirroreast, mirrorwest, uppertubesouth, tubesnifseast
-            at_out.writerow(row)
+        #adamtube
+        columnslist = ("time", "mirroreast", "mirrorwest", "uppertubesouth", "tubesnifseast")
+        at_df=pd.DataFrame(at_rows, columns=columnslist)     
+        
+        #boltwood
+        columnslist = ("time", "temp", "windspeed", "skytempdiff")
+        bw_df=pd.DataFrame(bw_rows, columns=columnslist)
+        
+        #cfht    
+        columnslist = ("time", "temp", "pressure", "windavgspd", "windavgdir", "windmaxspd", "windmaxdir")
+        cfht_df=pd.DataFrame(cfht_rows, columns=columnslist)
+        
+        #tcs
+        columnslist = ("time", "domeaz", "ha", "dec", "slit")
+        tcs_df=pd.DataFrame(tcs_rows, columns=columnslist)
             
-        
-        bw_out = csv.writer(open(exportBW, "w"))   
-        bw_out.writerow(['time', 'bw_temp', 'windspeed', 'skytempdiff'])
-        for row in bw_rows: #boltwood
-            #time, temp, windspeed, skytempdiff
-            bw_out.writerow(row)
-        
-        
-        cfht_out = csv.writer(open(exportCFHT, "w"))
-        cfht_out.writerow(['time', 'cfht_temp', 'pressure', 'windavgspd', 'windavgdir', 'windmaxspd', 'windmaxdir'])
-        for row in cfht_rows: #cfht
-            #time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir
-            cfht_out.writerow(row)
-        
-        
-        tcs_out = csv.writer(open(exportTCS, "w"))
-        tcs_out.writerow(['time', 'domeaz', 'ha', 'dec', 'slit'])    
-        for row in tcs_rows: #tcs
-            #time, domeaz, ha, dec, slit
-            tcs_out.writerow(row)
-        
-        
-        ups_out = csv.writer(open(exportUPS, "w"))
-        ups_out.writerow(['time', 'ambienttemp'])    
-        for row in ups_rows: #ups0
-            #time, ambienttemp
-            ups_out.writerow(row)
+        #ups0
+        columnslist = ("time", "ambienttemp")
+        ups_df=pd.DataFrame(ups_rows, columns=columnslist)
             
-            
-        print("All data exported")
+        print("All data retrived.")
+        print("Beginning data processing.")
+        
+        
+        
+        # ---- COMBINE DATAFRAMES ----
+        
+        dataFrame=    acr_df.merge(at_df, on="time", how="outer")
+        #dataFrame= dataFrame.merge(bw_df, on="time", how="outer")
+        #dataFrame= dataFrame.merge(cfht_df, on="time", how="outer")
+        #dataFrame= dataFrame.merge(tcs_df, on="time", how="outer")
+        #dataFrame= dataFrame.merge(ups_df, on="time", how="outer")
+        
+        
+        
+        # ---- EXPORT DATAFRAME ----
+        dataFrame.to_csv(exportDF, header=True, index=False)
+        
+        print("All data parsed, process complete.")
+        
     except:
         print("Error exporting data")
         raise
+      
+        
+      
