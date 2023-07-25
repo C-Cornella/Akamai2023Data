@@ -1,0 +1,48 @@
+---
+title: "Data Analysis"
+author: "Catherine Cornella"
+output: html_notebook
+---
+
+# Setup libraries
+```{r}
+library(dplyr)      #General Data wrangling
+library(readr)      #File reading and writing
+library(stringr)    #String reading
+library(knitr)      #Markdown file exporting
+library(tidyr)      #Data formatting
+library(lubridate)  #Date-Time Wrangling
+```
+
+# Import data
+
+### Meteorological data
+
+```{r}
+
+```
+
+### Sensor Data
+
+```{r}
+
+```
+
+### Engineering Data
+
+```{r}
+
+```
+
+# Tidy/Re-format Data
+
+
+# Analysis
+
+What's the sensor with the most optical turbulence? on average? 
+
+When do we see the most optical turbulence? 
+
+When we compare the mirror temp to the optical turbulence what do we see?
+
+Comparison between wind direction while dome slit open and optical turbulence?
