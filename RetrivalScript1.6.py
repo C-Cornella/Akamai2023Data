@@ -76,7 +76,7 @@ with psycopg2.connect(host=HOST, dbname=DATABASE, user=USER, password=PASSWORD, 
             cur.execute(tcs_query)
             tcs_rows = cur.fetchall()
             # -- ups0 -------
-            ups_query ="SELECT time, ambienttemp FROM ups0 WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd) + " LIMIT 5"
+            ups_query ="SELECT time, ambienttemp FROM ups0 WHERE time BETWEEN " + str(timeStart) + " AND " + str(timeEnd)
             cur.execute(ups_query)
             ups_rows = cur.fetchall()
             
