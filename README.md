@@ -24,6 +24,12 @@ To execute, run `Rscript sensor_to_csv1.R ImportPath ExportPath SensorName Senso
 
 ## Usual Errors
 
+Missing Packages: The R libraries needed for this script may require the installation of additional packages. A list of all packages required is provided below.
+tidyverse (for dplyr, readr, tidyr)
+stringr (for stringr)
+knitr (for knitr)
+lubridate (for lubridate)
+
 Path errors: The `/` must be included in the export path, and the import path must direct to the folder containing all the days for that sensor. 
 
 Import errors: The script expects the data in the form of .txt files, as produced by `npha_Neo3b.pro`. The difference between `npha_Neo3.pro` and `npha_Neo3b.pro` is the addition of the exporting of `month` and `day` to the latter. `npha_Neo3b.pro` was edited specifically to address the difficulties of `floatDate` parsing by simply adding the information in another format. `floatDate` was included as a precautionary measure. 
