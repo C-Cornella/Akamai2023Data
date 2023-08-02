@@ -1,11 +1,23 @@
 ---
 title: "Data Analysis"
+date: "August 2023"
 author: "Catherine Cornella"
-output: html_document
+output: 
+  html_document:
+    code_folding: show
 ---
 
 # Setup libraries
-```{r Setup, message=FALSE, warning=FALSE}
+
+The packages required are as follows: 
+
+* tidyverse (for dplyr, readr, tidyr)
+* stringr (for stringr)
+* knitr (for knitr)
+* lubridate (for lubridate)
+* ggplot2 (for ggplot2)
+
+```{r Setup:Libraries, message=FALSE, warning=FALSE, include=FALSE}
 library(dplyr)      #General Data wrangling
 library(ggplot2)    #Plotting and analysis
 library(readr)      #File reading and writing
@@ -13,11 +25,21 @@ library(stringr)    #String reading
 library(knitr)      #Markdown file exporting
 library(tidyr)      #Data formatting
 library(lubridate)  #Date-Time Wrangling
+```
+
+
+```{r Setup:Variables, message=FALSE, warning=FALSE}
 
 #Establish General Import path: 
 #If the data location is ever changed, it can be altered in this one location and hold true for every file. 
 importPath="/data/airflow/analysis/"
+
+#Start date: 
+startDate <- "2022-08-18"
+endDate <- "2023-04-16"
 ```
+
+All files are expected to be under the import path given above, under `csvs`. Used repeatedly throughout the analysis is also the window of time that all data is narrowed to. We specify that here so as to change more easily. 
 
 # Import data
 
@@ -29,6 +51,8 @@ MeteorDataDT <- read_csv(path)
 ```
 
 ### Sensor Data
+
+The sensor files names will have to be changed when their locations changed. This is something of a hardcoded bug, but it is on purpose. It could be made to simply select all sensor data, but that carries risks of mixing the data from sensors now in different locations. At present, simply changing the names of the csvs below offers the most control. 
 
 ```{r Import:Sensor, message=FALSE, warning=FALSE}
 path=paste(importPath, "cyclone-hx9-telescope_spider_south.csv", sep="")
@@ -44,6 +68,8 @@ turbo_df <- read_csv(path, skip=5)
 ```
 
 ### Engineering Data
+
+The engineering data is in 6 different csv files and must be combined. These are expected to be the result of running `RetrivalScript1.6.py`. The data retrieved from each SQL table is commented within the code.
 
 ```{r Import:Engineering, message=FALSE, warning=FALSE}
 # -- adamcomproom table -- 
@@ -62,30 +88,115 @@ path=paste(importPath, "bwOutput.csv", sep="")
 bw_df <- read_csv(path)
 
 # -- cfht table -- 
-# contains time, temp, windspeed, skytempdiff
+# contains time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir
 path=paste(importPath, "cfhtOutput.csv", sep="")
 cfht_df <- read_csv(path)
 
 # -- tcs table -- 
-# contains time, temp, windspeed, skytempdiff
+# contains time, domeaz, ha, dec, slit
 path=paste(importPath, "tcsOutput.csv", sep="")
 tcs_df <- read_csv(path)
 
 # -- ups0 table -- 
-# contains time, temp, windspeed, skytempdiff
+# contains time, ambienttemp
 path=paste(importPath, "upsOutput.csv", sep="")
 ups_df <- read_csv(path)
 ```
 
 # Tidy/Re-format Data
 
-```{r}
+To this point, the data has been brought over with as minimal manipulation or exclusion of data as possible. However, it is easier to run analysis on data with standardized dates and times, and not necessary to keep weather data beyond our window of time. 
+
+## Meteorological
+
+The weather data comes as just all the data from a particular year, so we narrow it down to our specific time window. 
+
+```{r Tidy:Meteor, message=FALSE, warning=FALSE}
 #Meteorlogical data: 
 #Narrow the dates down to our timeframe. 
-weather_d <- MeteorDataDT %>% filter(MeteorDataDT$DateTime >= as.Date("2022-08-18") & MeteorDataDT$DateTime <= as.Date("2023-04-16") )
+weather_d <- MeteorDataDT %>% filter(MeteorDataDT$DateTime >= as.Date(startDate) & MeteorDataDT$DateTime <= as.Date(endDate) )
+```
 
+The sensor data is also combined into a single master dataframe. 
+
+```{r Tidy:Sensor, message=FALSE, warning=FALSE}
 #Add all the Sensors into one dataframe.
 sensorMaster <- rbind(cyc_df, dark_df, fre_df, pic_df, turbo_df)
+```
+
+## Engineering
+
+First, convert all Unix timestamps to dateTime (posix objects)
+
+```{r Tidy:Engineering:dateTime, message=FALSE, warning=FALSE}
+
+#Save the time as a Date time (posix) object so we can round it safely later. 
+acr_df <- acr_df %>% mutate(dateTime= as_datetime(time)) %>% arrange(dateTime) #every ten seconds 00
+at_df  <- at_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every ten seconds 00
+bw_df  <- bw_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every minute 00
+cfht_df<- cfht_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every five seconds starting at 03
+tcs_df <- tcs_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every 16 seconds. (why. just why.)
+ups_df <- ups_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every five seconds starting at 01
+```
+
+Second, round the time to every 5 minutes. 
+
+```{r Tidy:Engineering:5min, message=FALSE, warning=FALSE}
+
+#rounded_date rounds all times to the nearest time interval, in our case, 5 minutes. 
+acr_df$dateTime <- round_date(acr_df$dateTime, unit="5 mins")
+at_df$dateTime <- round_date(at_df$dateTime, unit="5 mins")
+bw_df$dateTime <- round_date(bw_df$dateTime, unit="5 mins")
+cfht_df$dateTime <- round_date(cfht_df$dateTime, unit="5 mins")
+tcs_df$dateTime <- round_date(tcs_df$dateTime, unit="5 mins")
+ups_df$dateTime <- round_date(ups_df$dateTime, unit="5 mins")
+
+```
+
+Third, average all the values that rounded to that time into one row 
+
+```{r Tidy:Engineering:average, message=FALSE, warning=FALSE}
+#By grouping by the dateTime, anything we do after that will do it just for each group. 
+#We have to hardcode each column of the engineering data for each table so we actually get an average of all of the columns.
+acr5_df <- acr_df %>% group_by(dateTime) %>% 
+                      summarize(rack1=mean(rack1), 
+                                rack2=mean(rack2), 
+                                rack3=mean(rack3))
+at5_df <- at_df %>% group_by(dateTime) %>% 
+                      summarize(mirroreast=mean(mirroreast), 
+                                mirrorwest=mean(mirrorwest), 
+                                uppertubesouth=mean(uppertubesouth), 
+                                tubesnifseast=mean(tubesnifseast))
+bw5_df <- bw_df %>% group_by(dateTime) %>% 
+                      summarize(bw_temp=mean(bw_temp), 
+                                windspeed=mean(windspeed), 
+                                skytempdiff=mean(skytempdiff))
+cfht5_df <- cfht_df %>% group_by(dateTime) %>% 
+                      summarize(cfht_temp=mean(cfht_temp), 
+                                pressure=mean(pressure), 
+                                windavgspd=mean(windavgspd), 
+                                windavgdir=mean(windavgdir), 
+                                windmaxspd=mean(windmaxspd), 
+                                windmaxdir=mean(windmaxdir))
+tcs5_df <- tcs_df %>% group_by(dateTime) %>% 
+                      summarize(domeaz=mean(domeaz), 
+                                ha=mean(ha), 
+                                dec=mean(dec), 
+                                slit=mean(slit))
+ups5_df <- ups_df %>% group_by(dateTime) %>% 
+                      summarize(ambienttemp=mean(ambienttemp) )
+```
+
+Fourth, combine all the engingeering data into a single master dataFrame
+
+```{r Tidy:Engineering:master, message=FALSE, warning=FALSE}
+#Merging the dataframe in an outer style join
+engineeringMaster <- merge(acr5_df, at5_df, by="dateTime", all=TRUE)
+engineeringMaster <- merge(engineeringMaster, bw5_df, by="dateTime", all=TRUE)
+engineeringMaster <- merge(engineeringMaster, cfht5_df, by="dateTime", all=TRUE)
+engineeringMaster <- merge(engineeringMaster, tcs5_df, by="dateTime", all=TRUE)
+engineeringMaster <- merge(engineeringMaster, ups5_df, by="dateTime", all=TRUE)
+
 ```
 
 # Analysis
@@ -93,25 +204,50 @@ sensorMaster <- rbind(cyc_df, dark_df, fre_df, pic_df, turbo_df)
 Exploratory graph
 
 ```{r}
-#Cn2 multiplied by a factor of 100,000,000,000 for simple ease of readability and scaling.
-#Simple Cn2 values by sensor, big picture
+#Cn2 taken as log for readability. 
+#Simple Cn2 values by sensor, big picture, binwidth approach
 sensorMaster %>%  
-ggplot( aes(x=(Cn2*100000000000), color=sensor)) + 
-  geom_histogram(binwidth=0.00005) + xlim(0,0.05) 
+ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+  geom_histogram(binwidth=0.25)
+ 
+#Simple Cn2 values by sensor, big picture, bins approach
+sensorMaster %>%  
+ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+  geom_histogram(bins=100)
 
-#Simple Cn2 values by sensor, zoom in level 1
+#Simple Cn2 values by sensor, facetwrapped, 5xbins
 sensorMaster %>% 
-ggplot( aes(x=(Cn2*100000000000), color=sensor)) + 
-  geom_histogram(binwidth=0.00005) + xlim(0,0.01) 
+ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+  geom_histogram(bins=500) +
+  facet_wrap(~sensor, scales="fixed")
+```
+```{r}
+#Simple Cn2 values by sensor, facet~wrapped by dome open or closed
 
-#Simple Cn2 values by sensor, zoom in level 2
-sensorMaster %>%  
-ggplot( aes(x=(Cn2*100000000000), color=sensor)) + 
-  geom_histogram(binwidth=0.00005) + xlim(0,0.005) 
+#Slit legend: 
+# 0: dome midway
+# 1: dome open
+# -1: dome closed
+# -2: moving
+
+# try to mutate in the dome slit naively and see if it works
+engineeringMaster %>% select(dateTime, slit) %>%
+  mutate(slit=round(slit)) %>%
+ merge(sensorMaster, by="dateTime", all=TRUE) %>%
+  drop_na(sensor, slit) %>%
+  filter(slit!="-2") %>% 
+ggplot( aes(x=(log(Cn2)), color=sensor)) +
+  geom_histogram(bins=500) +
+  facet_wrap(~slit, scales="fixed")
+
+#wy do we have na's in the slit data????
+engineeringMaster %>% filter(is.na(slit))
+#okay why do we have NA in the tcs
+tcs5_df %>% filter(date(dateTime)==as.Date("2022-08-26"))
+#so we don't actually have NA's, but it does go offline. 
 
 ```
 
-At a glance it looks like turbopanda has the most consistently low OT, with all other sensors holding a secondary spike. Given that Picasso was the longest running sensor and also has the secondary spike, baring any secondary causes, the relative concentration of the turbopanda data is probably not due to simply more data. picasso has a runtime of approximately 8 months (august to april), and turbo panda is only 3 less than that (august to january). 
 
 
 ```{r }
@@ -120,10 +256,11 @@ scrap <- sensorMaster %>% mutate(daDate=date(dateTime)) %>%
                         group_by(sensor, daDate)%>% 
                         mutate(Cn2=mean(Cn2)) 
 
-ggplot(scrap, aes(x=(Cn2*100000000000), color=sensor)) + 
-  geom_histogram(binwidth=0.00005) + xlim(0,0.005)
+ggplot(scrap, aes(x=(log(Cn2)), color=sensor)) + 
+  geom_histogram()
 
 ```
+
 
 What's the sensor with the most optical turbulence? on average? 
 
@@ -154,22 +291,10 @@ day_avg_byHour <- sensorMaster %>% group_by(sensor) %>%
 day_avg_byHour_plot <- day_avg_byHour %>% ggplot(aes(x=hourTime, color=sensor)) +
                             geom_line(aes(y=hourAvg )) + 
                             geom_line(aes(y=std_dev), linetype="dashed") + 
-                            facet_wrap(~sensor, scales="fixed") 
+                            facet_wrap(~sensor, scales="free") 
 #display
 day_avg_byHour_plot
 
-#make the dataframe: average Cn2 values per sensor, split between day and night. 
-# night_avg_byHour <- sensorMaster %>% group_by(sensor) %>% 
-#                             mutate(hourTime= hour(dateTime)) %>%
-#                             #filter(hourTime <= 5 | hourTime >= 18) %>% 
-#                             group_by(sensor, hourTime) %>% 
-#                             summarize(hourAvg= mean(Cn2))
-# #plot
-# night_avg_byHour_plot <- night_avg_byHour %>% ggplot(aes(x=hourTime, y=hourAvg, color=sensor)) + 
-#                             geom_line(linetype="dashed") + 
-#                             geom_point()
-# #display
-# night_avg_byHour_plot
 ```
 
 I note that everything so far has been seemingly ignoring the time discrepancies between all the sensors. 
@@ -181,91 +306,6 @@ Alright, we got distinct graphs. given that it's average values per hour across 
        a) mirror and the tube, 
 or the b) mirror and the outside air,
 or the c) tube and the outside air? 
-
-We're gonna have to synthesize the engineering data into every 5 minutes to link it up properly. 
-current thoughts are to 
-a) straight up transpose the times to the nearest 5 minute interval (bad)
-b) round all times to 5 minute interval and average/combine all values for those rows (best?)
-c) create an entry for every minute based on the nearest entry, and then 
-    i) discard the not-every-5-minutes times
-    ii) average the surrounding times to every 5 minutes. 
-    
-
-```{r}
-#start looking at the engineering data
-#Save the time as a Date time (posix) object so we can round it safely later. 
-acr_df <- acr_df %>% mutate(dateTime= as_datetime(time)) %>% arrange(dateTime) #every ten seconds 00
-at_df  <- at_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every ten seconds 00
-bw_df  <- bw_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every minute 00
-cfht_df<- cfht_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every five seconds starting at 03
-tcs_df <- tcs_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every 16 seconds. (why. just why.)
-ups_df <- ups_df %>% mutate(dateTime= as_datetime(time))%>% arrange(dateTime) #every five seconds starting at 01
-```
-
-So the engineering data is in seconds. meaning it's best to simply take the values from within a certain range of it and average them to the nearest minute. 
-
-``` {r}
-#rounded_date rounds all times to the nearest time interval, in our case, 5 minutes. 
-acr_df$dateTime <- round_date(acr_df$dateTime, unit="5 mins")
-at_df$dateTime <- round_date(at_df$dateTime, unit="5 mins")
-bw_df$dateTime <- round_date(bw_df$dateTime, unit="5 mins")
-cfht_df$dateTime <- round_date(cfht_df$dateTime, unit="5 mins")
-tcs_df$dateTime <- round_date(tcs_df$dateTime, unit="5 mins")
-ups_df$dateTime <- round_date(ups_df$dateTime, unit="5 mins")
-
-#At this point we still have a row for each second, so now we need to average all the values into one row for each minute. 
-
-acr_df
-at_df
-bw_df
-cfht_df
-tcs_df
-ups_df
-
-```
-```{r}
-#By grouping by the dateTime, anything we do after that will do it just for each group. 
-acr5_df <- acr_df %>% group_by(dateTime) %>% 
-                      summarize(rack1=mean(rack1), 
-                                rack2=mean(rack2), 
-                                rack3=mean(rack3))
-at5_df <- at_df %>% group_by(dateTime) %>% 
-                      summarize(mirroreast=mean(mirroreast), 
-                                mirrorwest=mean(mirrorwest), 
-                                uppertubesouth=mean(uppertubesouth), 
-                                tubesnifseast=mean(tubesnifseast))
-bw5_df <- bw_df %>% group_by(dateTime) %>% 
-                      summarize(bw_temp=mean(bw_temp), 
-                                windspeed=mean(windspeed), 
-                                skytempdiff=mean(skytempdiff))
-cfht5_df <- cfht_df %>% group_by(dateTime) %>% 
-                      summarize(cfht_temp=mean(cfht_temp), 
-                                pressure=mean(pressure), 
-                                windavgspd=mean(windavgspd), 
-                                windavgdir=mean(windavgdir), 
-                                windmaxspd=mean(windmaxspd), 
-                                windmaxdir=mean(windmaxdir))
-tcs5_df <- tcs_df %>% group_by(dateTime) %>% 
-                      summarize(domeaz=mean(domeaz), 
-                                ha=mean(ha), 
-                                dec=mean(dec), 
-                                slit=mean(slit))
-ups5_df <- ups_df %>% group_by(dateTime) %>% 
-                      summarize(ambienttemp=mean(ambienttemp) )
-```
-
-Alright, now let's bind all the engineering data into one dataframe. Easier to compare it all 
-
-```{r}
-#merge(x = df1, y = df2, by = "CustomerId", all = TRUE)
-engineeringMaster <- merge(acr5_df, at5_df, by="dateTime", all=TRUE)
-engineeringMaster <- merge(engineeringMaster, bw5_df, by="dateTime", all=TRUE)
-engineeringMaster <- merge(engineeringMaster, cfht5_df, by="dateTime", all=TRUE)
-engineeringMaster <- merge(engineeringMaster, tcs5_df, by="dateTime", all=TRUE)
-engineeringMaster <- merge(engineeringMaster, ups5_df, by="dateTime", all=TRUE)
-engineeringMaster
-
-```
 
 
 (3) versus time of day, and 
