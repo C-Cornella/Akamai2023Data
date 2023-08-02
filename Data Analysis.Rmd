@@ -207,17 +207,17 @@ Exploratory graph
 #Cn2 taken as log for readability. 
 #Simple Cn2 values by sensor, big picture, binwidth approach
 sensorMaster %>%  
-ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+ggplot( aes(x=(log(Cn2, base=10)), color=sensor)) + 
   geom_histogram(binwidth=0.25)
  
 #Simple Cn2 values by sensor, big picture, bins approach
 sensorMaster %>%  
-ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+ggplot( aes(x=(log(Cn2, base =10)), color=sensor)) + 
   geom_histogram(bins=100)
 
 #Simple Cn2 values by sensor, facetwrapped, 5xbins
 sensorMaster %>% 
-ggplot( aes(x=(log(Cn2)), color=sensor)) + 
+ggplot( aes(x=(log(Cn2, base=10)), color=sensor)) + 
   geom_histogram(bins=500) +
   facet_wrap(~sensor, scales="fixed")
 ```
@@ -230,20 +230,32 @@ ggplot( aes(x=(log(Cn2)), color=sensor)) +
 # -1: dome closed
 # -2: moving
 
-# try to mutate in the dome slit naively and see if it works
-engineeringMaster %>% select(dateTime, slit) %>%
-  mutate(slit=round(slit)) %>%
- merge(sensorMaster, by="dateTime", all=TRUE) %>%
-  drop_na(sensor, slit) %>%
-  filter(slit!="-2") %>% 
-ggplot( aes(x=(log(Cn2)), color=sensor)) +
+# try to mutate in the dome slit naively and see if it works (spoilers, seems to)
+sensorSlit <- engineeringMaster %>% select(dateTime, slit) %>%
+                                    mutate(slit=round(slit)) %>%
+                                    merge(sensorMaster, by="dateTime", all=TRUE) %>% 
+                                    drop_na(sensor)
+
+
+# Show by sensor when dome is Open
+sensorSlit %>% filter(slit=="0") %>% 
+ggplot( aes(x=(log(Cn2, base=10)), color=sensor)) +
   geom_histogram(bins=500) +
-  facet_wrap(~slit, scales="fixed")
+  facet_wrap(~sensor, scales="fixed") + 
+  labs(title="Dome open by sensor", x= "log 10 of Cn2 values", y= "count of values")
+
+# Show by sensor when dome is closed
+sensorSlit %>% filter(slit=="-1") %>% 
+ggplot( aes(x=(log(Cn2, base = 10)), color=sensor)) +
+  geom_histogram(bins=500) +
+  facet_wrap(~sensor, scales="fixed") + 
+  labs(title="Dome closed by sensor", x= "log 10 of Cn2 values", y= "count of values")
 
 #wy do we have na's in the slit data????
-engineeringMaster %>% filter(is.na(slit))
+temp<-engineeringMaster %>% filter(is.na(slit)) %>% 
+                            mutate(date=date(dateTime))
+listOfMissing <- unique(temp$date)
 #okay why do we have NA in the tcs
-tcs5_df %>% filter(date(dateTime)==as.Date("2022-08-26"))
 #so we don't actually have NA's, but it does go offline. 
 
 ```
@@ -287,19 +299,18 @@ day_avg_byHour <- sensorMaster %>% group_by(sensor) %>%
                             mutate(std_dev =sd(Cn2)) %>% 
                             group_by(sensor, hourTime, std_dev) %>% 
                             summarize(hourAvg= mean(Cn2))
+
 #plot
 day_avg_byHour_plot <- day_avg_byHour %>% ggplot(aes(x=hourTime, color=sensor)) +
                             geom_line(aes(y=hourAvg )) + 
                             geom_line(aes(y=std_dev), linetype="dashed") + 
-                            facet_wrap(~sensor, scales="free") 
+                            facet_wrap(~sensor, scales="fixed")
 #display
 day_avg_byHour_plot
 
 ```
 
 I note that everything so far has been seemingly ignoring the time discrepancies between all the sensors. 
-
-Alright, we got distinct graphs. given that it's average values per hour across all entries, dunno what exactly we really learn from that. but there it is. 
 
 
 (2) do the sensor values show any dependence on difference in temperature between the 
