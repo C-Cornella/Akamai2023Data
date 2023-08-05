@@ -12,7 +12,7 @@ This script compiles csv files for AIRFLOW sensors as processed by `sensor_to_cs
 
 To execute, run `Rscript csv_to_master.R ImportPath ExportPath` from your command line. 
 
-`ImportPath` is the location to begin looking for the .txt files
+`ImportPath` is the location to begin looking for the .txt files - include a / at the end of this path
 
 `ExportPath` is the location to export the .csv files - include a `/` at the end of this path. 
 

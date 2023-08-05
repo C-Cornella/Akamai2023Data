@@ -24,40 +24,31 @@ if (length(args)<2) {
 
 # -------- DATA IMPORTING --------
 
-# ---- Sensors
-path=paste(importPath, "cyclone-hx9-telescope_spider_south.csv", sep="")
-cyc_df <- read_csv(path, skip=5)
-path=paste(importPath, "darkthunder-dome_slit_bottom_horizontal.csv", sep="")
-dark_df <- read_csv(path, skip=5)
-path=paste(importPath, "freflow-mez_obsroom_horizontal.csv", sep="")
-fre_df <- read_csv(path, skip=5)
-path=paste(importPath, "picasso-mez_obsroom_vertical.csv", sep="")
-pic_df <- read_csv(path, skip=5)
-path=paste(importPath, "turbopanda-dome_slit_top_vertical.csv", sep="")
-turbo_df <- read_csv(path, skip=5)
-
-
-# ---- Engineering
 # -- adamcomproom table -- 
 #contains time, rack1, rack2, rack3
 path=paste(importPath, "acrOutput.csv", sep="")
 acr_df <- read_csv(path)
+
 # -- adamtube table -- 
 #contains time, mirroreast, mirrorwest, uppertubesouth, tubesnifseast
 path=paste(importPath, "atOutput.csv", sep="")
 at_df <- read_csv(path)
+
 # -- boltwood table -- 
 # contains time, temp, windspeed, skytempdiff
 path=paste(importPath, "bwOutput.csv", sep="")
 bw_df <- read_csv(path)
+
 # -- cfht table -- 
 # contains time, temp, pressure, windavgspd, windavgdir, windmaxspd, windmaxdir
 path=paste(importPath, "cfhtOutput.csv", sep="")
 cfht_df <- read_csv(path)
+
 # -- tcs table -- 
 # contains time, domeaz, ha, dec, slit
 path=paste(importPath, "tcsOutput.csv", sep="")
 tcs_df <- read_csv(path)
+
 # -- ups0 table -- 
 # contains time, ambienttemp
 path=paste(importPath, "upsOutput.csv", sep="")
@@ -65,9 +56,6 @@ ups_df <- read_csv(path)
 
 
 # -------- DATA TIDYING --------
-
-#Add all the Sensors into one dataframe.
-sensorMaster <- rbind(cyc_df, dark_df, fre_df, pic_df, turbo_df)
 
 # unix time to posix time object: 
 #Save the time as a Date time (posix) object so we can round it safely later. 
@@ -126,16 +114,11 @@ engineeringMaster <- merge(engineeringMaster, cfht5_df, by="dateTime", all=TRUE)
 engineeringMaster <- merge(engineeringMaster, tcs5_df, by="dateTime", all=TRUE)
 engineeringMaster <- merge(engineeringMaster, ups5_df, by="dateTime", all=TRUE)
 
-#
-engineeringSensorMaster <- engineeringMaster %>% mutate(slit=round(slit)) %>%
-                                  merge(sensorMaster, by="dateTime", all=TRUE) %>% 
-                                  drop_na(sensor)
-
 # -------- DATA EXPORTING --------
 
 #Add the export path to the beginning of the specific .csv name
 # -- Additional argument: sep: added to remove the usually added space
-exportfPath <-paste(exportPath, "engineeringSensorMaster.csv", sep="")
+exportfPath <-paste(exportPath, "engineeringMaster.csv", sep="")
 
 #Add information such as given import and export path
 writeLines(c(paste("Import path:", importPath), 
@@ -143,4 +126,4 @@ writeLines(c(paste("Import path:", importPath),
              paste("Day Exported: ", date() ) ), exportfPath)
 
 #Export dataframe as a .csv
-write.table(dataFrame, exportfPath, row.names=FALSE, col.names=TRUE, append=TRUE, sep=",")
+write.table(engineeringMaster, exportfPath, row.names=FALSE, col.names=TRUE, append=TRUE, sep=",")

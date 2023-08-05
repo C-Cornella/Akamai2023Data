@@ -92,4 +92,4 @@ writeLines(c(paste("Export path:", exportPath),
              paste("Day Exported: ", date() ) ), exportPath)
 
 #Export the DateTime dataframe (dataframeDT) as a .csv
-write.csv(dataframeDT, exportPath, row.names=FALSE)
+write.table(dataframeDT, exportPath, row.names=FALSE, col.names=TRUE, append=TRUE, sep=",")
