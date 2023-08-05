@@ -196,30 +196,33 @@ engineeringMaster <- merge(engineeringMaster, bw5_df, by="dateTime", all=TRUE)
 engineeringMaster <- merge(engineeringMaster, cfht5_df, by="dateTime", all=TRUE)
 engineeringMaster <- merge(engineeringMaster, tcs5_df, by="dateTime", all=TRUE)
 engineeringMaster <- merge(engineeringMaster, ups5_df, by="dateTime", all=TRUE)
-
+engineeringMaster
 ```
 
 # Analysis
 
 Exploratory graph
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Cn2 taken as log for readability. 
 #Simple Cn2 values by sensor, big picture, binwidth approach
 sensorMaster %>%  
 ggplot( aes(x=(log(Cn2, base=10)), color=sensor)) + 
-  geom_histogram(binwidth=0.25)
+  geom_histogram(binwidth=0.25)+ 
+  labs(title="Turbulence Value Distribution", x= "log 10 of Cn2 values", y= "count of values")
  
 #Simple Cn2 values by sensor, big picture, bins approach
 sensorMaster %>%  
 ggplot( aes(x=(log(Cn2, base =10)), color=sensor)) + 
-  geom_histogram(bins=100)
+  geom_histogram(bins=100)+ 
+  labs(title="Turbulence Value Distribution (Percentile)", x= "log 10 of Cn2 values", y= "count of values")
 
 #Simple Cn2 values by sensor, facetwrapped, 5xbins
 sensorMaster %>% 
 ggplot( aes(x=(log(Cn2, base=10)), color=sensor)) + 
   geom_histogram(bins=500) +
-  facet_wrap(~sensor, scales="fixed")
+  facet_wrap(~sensor, scales="fixed")+ 
+  labs(title="Turbulence Value Distribution by sensor", x= "log 10 of Cn2 values", y= "count of values")
 ```
 ```{r}
 #Simple Cn2 values by sensor, facet~wrapped by dome open or closed
@@ -262,7 +265,7 @@ listOfMissing <- unique(temp$date)
 
 
 
-```{r }
+```{r message=FALSE, warning=FALSE}
 #create a data frame with average Cn2 data per day
 scrap <- sensorMaster %>% mutate(daDate=date(dateTime)) %>% 
                         group_by(sensor, daDate)%>% 
@@ -283,7 +286,7 @@ What are the corresponding standard deviations?
 Do these values change if you cut your sample size in half (first half and second half or odd samples v. even samples)?  
 For nighttime dome open measurements (and maybe separately for closed dome measurements)  
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #make the dataframe: average Cn2 values per sensor, split between day and night, by hour. 
 
 # Okay. The point here is to make the average values of the Cn2 values every hour. 
@@ -312,12 +315,11 @@ day_avg_byHour_plot
 
 I note that everything so far has been seemingly ignoring the time discrepancies between all the sensors. 
 
-
-(2) do the sensor values show any dependence on difference in temperature between the 
+Further Questions to explore: 
+(1) do the sensor values show any dependence on difference in temperature between the 
        a) mirror and the tube, 
 or the b) mirror and the outside air,
 or the c) tube and the outside air? 
 
-
-(3) versus time of day, and 
-(4) versus the direction of the dome with respect to the wind direction reported by the CFHT/Gemini weather tower?
+(2) versus time of day, and 
+(3) versus the direction of the dome with respect to the wind direction reported by the CFHT/Gemini weather tower?
