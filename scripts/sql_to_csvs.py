@@ -6,7 +6,7 @@ import argparse     #argument parsing
 
 HOST = "128.171.168.82"
 DATABASE = "uh88weather"
-PASSWORD = "grf22newdb"
+PASSWORD = "*****" #password redacted for security
 USER = "grafana"
 CONNECT_TIMEOUT = 5
 
